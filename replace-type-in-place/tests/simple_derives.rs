@@ -1,5 +1,4 @@
 use replace_type_in_place::{Replace, ReplaceInPlace};
-use std::marker::PhantomData;
 
 #[derive(Replace, ReplaceInPlace, Debug, PartialEq)]
 struct NamedStruct<T> {

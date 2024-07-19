@@ -41,14 +41,10 @@ fn generate_replace_impls(
             let replace_fields = generate_replace_fields(name, data, param_name);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             
-            let mut extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
+            let extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
                 where_token: syn::Token![where](proc_macro2::Span::call_site()),
                 predicates: syn::punctuated::Punctuated::new(),
             });
-
-            extended_where_clause.predicates.push(
-                syn::parse_quote!(#param_name: replace_type_in_place::Replace<#param_name>)
-            );
 
             let new_type_params = generics.type_params().map(|tp| {
                 if tp.ident == *param_name {
@@ -83,14 +79,10 @@ fn generate_replace_in_place_impls(
             let replace_in_place_fields = generate_replace_in_place_fields(name, data, param_name);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-            let mut extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
+            let extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
                 where_token: syn::Token![where](proc_macro2::Span::call_site()),
                 predicates: syn::punctuated::Punctuated::new(),
             });
-
-            extended_where_clause.predicates.push(
-                syn::parse_quote!(#param_name: replace_type_in_place::ReplaceInPlace<#param_name>)
-            );
 
             let new_type_params = generics.type_params().map(|tp| {
                 if tp.ident == *param_name {
