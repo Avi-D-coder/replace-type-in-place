@@ -1,8 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{
-    parse_macro_input, Data, DeriveInput, Fields, TypeParam
-};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, TypeParam};
 
 #[proc_macro_derive(Replace)]
 pub fn derive_replace(input: TokenStream) -> TokenStream {
@@ -52,9 +50,17 @@ fn generate_replace_impls(
                 syn::parse_quote!(#param_name: replace_type_in_place::Replace<#param_name>)
             );
 
+            let new_type_params = generics.type_params().map(|tp| {
+                if tp.ident == *param_name {
+                    quote!(New)
+                } else {
+                    quote!(#tp)
+                }
+            });
+
             quote! {
                 impl #impl_generics replace_type_in_place::Replace<#param_name> for #name #ty_generics #extended_where_clause {
-                    type OutputSelf<New> = #name<New>;
+                    type OutputSelf<New> = #name<#(#new_type_params),*>;
                     fn replace<New>(self, f: &mut impl FnMut(#param_name) -> New) -> Self::OutputSelf<New> {
                         #replace_fields
                     }
@@ -85,12 +91,19 @@ fn generate_replace_in_place_impls(
             extended_where_clause.predicates.push(
                 syn::parse_quote!(#param_name: replace_type_in_place::ReplaceInPlace<#param_name>)
             );
+
+            let new_type_params = generics.type_params().map(|tp| {
+                if tp.ident == *param_name {
+                    quote!(New)
+                } else {
+                    quote!(#tp)
+                }
+            });
             
             quote! {
                 impl #impl_generics replace_type_in_place::ReplaceInPlace<#param_name> for #name #ty_generics #extended_where_clause {
-                    type OutputSelf<New> = #name<New>;
+                    type OutputSelf<New> = #name<#(#new_type_params),*>;
                     fn replace_in_place<New>(self, f: &mut impl FnMut(#param_name) -> New) -> <Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New> {
-                        // ... (size and alignment checks remain the same)
                         #replace_in_place_fields
                     }
                 }
@@ -113,9 +126,9 @@ fn generate_replace_fields(
                     if type_is_param(field_type, param_name) {
                         quote! { #field_name: f(self.#field_name), }
                     } else if type_contains_param(field_type, param_name) {
-                        quote! { #field_name: <#field_type as Replace<#param_name>>::replace(self.#field_name, f), }
+                        quote! { #field_name: <#field_type as replace_type_in_place::Replace<#param_name>>::replace(self.#field_name, f), }
                     } else {
-                        quote! { #field_name: f(self.#field_name), }
+                        quote! { #field_name: self.#field_name, }
                     }
                 });
                 quote! { #name { #(#field_replacements)* } }
@@ -127,9 +140,9 @@ fn generate_replace_fields(
                     if type_is_param(field_type, param_name) {
                         quote! { f(self.#index), }
                     } else if type_contains_param(field_type, param_name) {
-                        quote! { <#field_type as Replace<#param_name>>::replace(self.#index, f), }
+                        quote! { <#field_type as replace_type_in_place::Replace<#param_name>>::replace(self.#index, f), }
                     } else {
-                        quote! { f(self.#index), }
+                        quote! { self.#index, }
                     }
                 });
                 quote! { #name(#(#field_replacements)*) }
@@ -147,9 +160,9 @@ fn generate_replace_fields(
                             if type_is_param(field_type, param_name) {
                                 quote! { #field_name: f(#field_name), }
                             } else if type_contains_param(field_type, param_name) {
-                                quote! { #field_name: <#field_type as Replace<#param_name>>::replace(#field_name, f), }
+                                quote! { #field_name: <#field_type as replace_type_in_place::Replace<#param_name>>::replace(#field_name, f), }
                             } else {
-                                quote! { #field_name: f(#field_name), }
+                                quote! { #field_name, }
                             }
                         });
                         let field_patterns = fields.named.iter().map(|f| {
@@ -169,9 +182,9 @@ fn generate_replace_fields(
                             if type_is_param(field_type, param_name) {
                                 quote! { f(#field_name), }
                             } else if type_contains_param(field_type, param_name) {
-                                quote! { <#field_type as Replace<#param_name>>::replace(#field_name, f), }
+                                quote! { <#field_type as replace_type_in_place::Replace<#param_name>>::replace(#field_name, f), }
                             } else {
-                                quote! { f(#field_name), }
+                                quote! { #field_name, }
                             }
                         });
                         quote! {
@@ -192,7 +205,6 @@ fn generate_replace_fields(
         Data::Union(_) => unimplemented!("Unions are not supported"),
     }
 }
-
 
 fn generate_replace_in_place_fields(
     name: &syn::Ident,
@@ -225,7 +237,7 @@ fn generate_replace_in_place_fields(
         }
 
         let size_of_old_self = std::mem::size_of::<Self>();
-        let size_of_new_self = std::mem::size_of::<<Self as ReplaceInPlace<#param_name>>::OutputSelf<New>>();
+        let size_of_new_self = std::mem::size_of::<<Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New>>();
 
         if size_of_old_self != size_of_new_self {
             panic!(
@@ -239,7 +251,7 @@ fn generate_replace_in_place_fields(
         }
 
         let align_of_old_self = std::mem::align_of::<Self>();
-        let align_of_new_self = std::mem::align_of::<<Self as ReplaceInPlace<#param_name>>::OutputSelf<New>>();
+        let align_of_new_self = std::mem::align_of::<<Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New>>();
 
         if align_of_old_self != align_of_new_self {
             panic!(
@@ -258,14 +270,28 @@ fn generate_replace_in_place_fields(
             Fields::Named(ref fields) => {
                 let field_replacements = fields.named.iter().map(|f| {
                     let field_name = &f.ident;
-                    quote! { #field_name: <_ as ReplaceInPlace<#param_name>>::replace_in_place(self.#field_name, f), }
+                    let field_type = &f.ty;
+                    if type_is_param(field_type, param_name) {
+                        quote! { #field_name: f(self.#field_name), }
+                    } else if type_contains_param(field_type, param_name) {
+                        quote! { #field_name: <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self.#field_name, f), }
+                    } else {
+                        quote! { #field_name: self.#field_name, }
+                    }
                 });
                 quote! { #name { #(#field_replacements)* } }
             }
             Fields::Unnamed(ref fields) => {
-                let field_replacements = fields.unnamed.iter().enumerate().map(|(i, _)| {
+                let field_replacements = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = syn::Index::from(i);
-                    quote! { <_ as ReplaceInPlace<#param_name>>::replace_in_place(self.#index, f), }
+                    let field_type = &f.ty;
+                    if type_is_param(field_type, param_name) {
+                        quote! { f(self.#index), }
+                    } else if type_contains_param(field_type, param_name) {
+                        quote! { <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self.#index, f), }
+                    } else {
+                        quote! { self.#index, }
+                    }
                 });
                 quote! { #name(#(#field_replacements)*) }
             }
@@ -278,19 +304,36 @@ fn generate_replace_in_place_fields(
                     Fields::Named(ref fields) => {
                         let field_replacements = fields.named.iter().map(|f| {
                             let field_name = &f.ident;
-                            quote! { #field_name: <_ as ReplaceInPlace<#param_name>>::replace_in_place(#field_name, f), }
+                            let field_type = &f.ty;
+                            if type_is_param(field_type, param_name) {
+                                quote! { #field_name: f(#field_name), }
+                            } else if type_contains_param(field_type, param_name) {
+                                quote! { #field_name: <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(#field_name, f), }
+                            } else {
+                                quote! { #field_name, }
+                            }
                         });
-                        let field_replacements_ = field_replacements.clone();
+                        let field_patterns = fields.named.iter().map(|f| {
+                            let field_name = &f.ident;
+                            quote! { #field_name }
+                        });
                         quote! {
-                            #name::#variant_name { #(#field_replacements)* } => #name::#variant_name { #(#field_replacements_)* },
+                            #name::#variant_name { #(#field_patterns),* } => #name::#variant_name { #(#field_replacements)* },
                         }
                     },
                     Fields::Unnamed(ref fields) => {
                         let field_names: Vec<syn::Ident> = (0..fields.unnamed.len())
                             .map(|i| format_ident!("field{}", i))
                             .collect();
-                        let field_replacements = field_names.iter().map(|field_name| {
-                            quote! { <_ as ReplaceInPlace<#param_name>>::replace_in_place(#field_name, f), }
+                        let field_replacements = fields.unnamed.iter().zip(field_names.iter()).map(|(f, field_name)| {
+                            let field_type = &f.ty;
+                            if type_is_param(field_type, param_name) {
+                                quote! { f(#field_name), }
+                            } else if type_contains_param(field_type, param_name) {
+                                quote! { <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(#field_name, f), }
+                            } else {
+                                quote! { #field_name, }
+                            }
                         });
                         quote! {
                             #name::#variant_name(#(#field_names),*) => #name::#variant_name(#(#field_replacements)*),
@@ -315,7 +358,6 @@ fn generate_replace_in_place_fields(
         #replacement_logic
     }
 }
-
 
 fn type_is_param(ty: &syn::Type, param: &syn::Ident) -> bool {
     match ty {
