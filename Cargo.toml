@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "replace-type-in-place",
+    "replace-type-in-place-derive",
+]
