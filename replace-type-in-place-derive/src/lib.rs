@@ -43,8 +43,17 @@ fn generate_replace_impls(
             let replace_fields = generate_replace_fields(name, data, param_name);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             
+            let mut extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
+                where_token: syn::Token![where](proc_macro2::Span::call_site()),
+                predicates: syn::punctuated::Punctuated::new(),
+            });
+
+            extended_where_clause.predicates.push(
+                syn::parse_quote!(#param_name: replace_type_in_place::Replace<#param_name>)
+            );
+
             quote! {
-                impl #impl_generics Replace<#param_name> for #name #ty_generics #where_clause {
+                impl #impl_generics replace_type_in_place::Replace<#param_name> for #name #ty_generics #extended_where_clause {
                     type OutputSelf<New> = #name<New>;
                     fn replace<New>(self, f: &mut impl FnMut(#param_name) -> New) -> Self::OutputSelf<New> {
                         #replace_fields
@@ -67,11 +76,21 @@ fn generate_replace_in_place_impls(
             let param_name = &param.ident;
             let replace_in_place_fields = generate_replace_in_place_fields(name, data, param_name);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+            let mut extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
+                where_token: syn::Token![where](proc_macro2::Span::call_site()),
+                predicates: syn::punctuated::Punctuated::new(),
+            });
+
+            extended_where_clause.predicates.push(
+                syn::parse_quote!(#param_name: replace_type_in_place::ReplaceInPlace<#param_name>)
+            );
             
             quote! {
-                impl #impl_generics ReplaceInPlace<#param_name> for #name #ty_generics #where_clause {
+                impl #impl_generics replace_type_in_place::ReplaceInPlace<#param_name> for #name #ty_generics #extended_where_clause {
                     type OutputSelf<New> = #name<New>;
-                    fn replace_in_place<New>(self, f: &mut impl FnMut(#param_name) -> New) -> <Self as ReplaceInPlace<#param_name>>::OutputSelf<New> {
+                    fn replace_in_place<New>(self, f: &mut impl FnMut(#param_name) -> New) -> <Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New> {
+                        // ... (size and alignment checks remain the same)
                         #replace_in_place_fields
                     }
                 }
@@ -85,41 +104,35 @@ fn generate_replace_fields(
     data: &Data,
     param_name: &syn::Ident,
 ) -> proc_macro2::TokenStream {
-    let alignment_check = quote! {
-        if std::mem::align_of::<#param_name>() != std::mem::align_of::<New>() {
-            panic!(
-                "The Old type has a different alignment than the New type you tried to replace it with: \n\
-                Old: {} alignment: {}\n\
-                New: {} alignment: {}",
-                std::any::type_name::<#param_name>(),
-                std::mem::align_of::<#param_name>(),
-                std::any::type_name::<New>(),
-                std::mem::align_of::<New>()
-            );
-        }
-    };
-
     match *data {
         Data::Struct(ref data) => match data.fields {
             Fields::Named(ref fields) => {
                 let field_replacements = fields.named.iter().map(|f| {
                     let field_name = &f.ident;
-                    quote! { #field_name: <_ as Replace<#param_name>>::replace(self.#field_name, f), }
+                    let field_type = &f.ty;
+                    if type_is_param(field_type, param_name) {
+                        quote! { #field_name: f(self.#field_name), }
+                    } else if type_contains_param(field_type, param_name) {
+                        quote! { #field_name: <#field_type as Replace<#param_name>>::replace(self.#field_name, f), }
+                    } else {
+                        quote! { #field_name: f(self.#field_name), }
+                    }
                 });
-                quote! {
-                    #alignment_check
-                    #name { #(#field_replacements)* }
-                }
+                quote! { #name { #(#field_replacements)* } }
             }
             Fields::Unnamed(ref fields) => {
-                let field_replacements = fields.unnamed.iter().enumerate().map(|(i, _)| {
+                let field_replacements = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = syn::Index::from(i);
-                    quote! { <_ as Replace<#param_name>>::replace(self.#index, f), }
+                    let field_type = &f.ty;
+                    if type_is_param(field_type, param_name) {
+                        quote! { f(self.#index), }
+                    } else if type_contains_param(field_type, param_name) {
+                        quote! { <#field_type as Replace<#param_name>>::replace(self.#index, f), }
+                    } else {
+                        quote! { f(self.#index), }
+                    }
                 });
-                quote! {
-                    #alignment_check
-                    #name(#(#field_replacements)*)
-                }
+                quote! { #name(#(#field_replacements)*) }
             }
             Fields::Unit => quote! { #name },
         },
@@ -130,20 +143,36 @@ fn generate_replace_fields(
                     Fields::Named(ref fields) => {
                         let field_replacements = fields.named.iter().map(|f| {
                             let field_name = &f.ident;
-                            quote! { #field_name: <_ as Replace<#param_name>>::replace(#field_name, f), }
+                            let field_type = &f.ty;
+                            if type_is_param(field_type, param_name) {
+                                quote! { #field_name: f(#field_name), }
+                            } else if type_contains_param(field_type, param_name) {
+                                quote! { #field_name: <#field_type as Replace<#param_name>>::replace(#field_name, f), }
+                            } else {
+                                quote! { #field_name: f(#field_name), }
+                            }
                         });
-
-                        let field_replacements_ = field_replacements.clone();
+                        let field_patterns = fields.named.iter().map(|f| {
+                            let field_name = &f.ident;
+                            quote! { #field_name }
+                        });
                         quote! {
-                            #name::#variant_name { #(#field_replacements)* } => #name::#variant_name { #(#field_replacements_)* },
+                            #name::#variant_name { #(#field_patterns),* } => #name::#variant_name { #(#field_replacements)* },
                         }
                     },
                     Fields::Unnamed(ref fields) => {
                         let field_names: Vec<syn::Ident> = (0..fields.unnamed.len())
                             .map(|i| format_ident!("field{}", i))
                             .collect();
-                        let field_replacements = field_names.iter().map(|field_name| {
-                            quote! { <_ as Replace<#param_name>>::replace(#field_name, f), }
+                        let field_replacements = fields.unnamed.iter().zip(field_names.iter()).map(|(f, field_name)| {
+                            let field_type = &f.ty;
+                            if type_is_param(field_type, param_name) {
+                                quote! { f(#field_name), }
+                            } else if type_contains_param(field_type, param_name) {
+                                quote! { <#field_type as Replace<#param_name>>::replace(#field_name, f), }
+                            } else {
+                                quote! { f(#field_name), }
+                            }
                         });
                         quote! {
                             #name::#variant_name(#(#field_names),*) => #name::#variant_name(#(#field_replacements)*),
@@ -155,7 +184,6 @@ fn generate_replace_fields(
                 }
             });
             quote! {
-                #alignment_check
                 match self {
                     #(#variant_replacements)*
                 }
@@ -164,6 +192,7 @@ fn generate_replace_fields(
         Data::Union(_) => unimplemented!("Unions are not supported"),
     }
 }
+
 
 fn generate_replace_in_place_fields(
     name: &syn::Ident,
@@ -284,5 +313,34 @@ fn generate_replace_in_place_fields(
     quote! {
         #checks
         #replacement_logic
+    }
+}
+
+
+fn type_is_param(ty: &syn::Type, param: &syn::Ident) -> bool {
+    match ty {
+        syn::Type::Path(type_path) if type_path.path.segments.len() == 1 => {
+            type_path.path.segments[0].ident == *param
+        },
+        _ => false,
+    }
+}
+
+fn type_contains_param(ty: &syn::Type, param: &syn::Ident) -> bool {
+    match ty {
+        syn::Type::Path(type_path) => type_path.path.segments.iter().any(|segment| {
+            segment.ident == *param || 
+            match &segment.arguments {
+                syn::PathArguments::AngleBracketed(args) => args.args.iter().any(|arg| {
+                    if let syn::GenericArgument::Type(t) = arg {
+                        type_contains_param(t, param)
+                    } else {
+                        false
+                    }
+                }),
+                _ => false,
+            }
+        }),
+        _ => false,
     }
 }

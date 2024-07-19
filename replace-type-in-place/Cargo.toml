@@ -3,4 +3,9 @@ name = "replace-type-in-place"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["derive"]
+derive = ["dep:replace-type-in-place-derive"]
+
 [dependencies]
+replace-type-in-place-derive = { version = "0.1.0", path = "../replace-type-in-place-derive", optional = true }

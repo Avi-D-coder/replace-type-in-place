@@ -1,3 +1,6 @@
+#[cfg(feature = "derive")]
+pub use replace_type_in_place_derive::{Replace, ReplaceInPlace};
+
 use std::{any::type_name, mem, ptr};
 
 pub trait Replace<Old> {
@@ -5,16 +8,65 @@ pub trait Replace<Old> {
     fn replace<New>(self, f: &mut impl FnMut(Old) -> New) -> Self::OutputSelf<New>;
 }
 
+pub trait ReplaceInPlace<Old> {
+    type OutputSelf<New>;
+    fn replace_in_place<New>(self, f: &mut impl FnMut(Old) -> New) -> Self::OutputSelf<New>;
+}
+
+macro_rules! impl_replace_for_primitives {
+    ($($t:ty),*) => {
+        $(
+            impl Replace<$t> for $t {
+                type OutputSelf<New> = New;
+                fn replace<New>(self, f: &mut impl FnMut($t) -> New) -> Self::OutputSelf<New> {
+                    f(self)
+                }
+            }
+
+            impl ReplaceInPlace<$t> for $t {
+                type OutputSelf<New> = New;
+                fn replace_in_place<New>(self, f: &mut impl FnMut($t) -> New) -> Self::OutputSelf<New> {
+                    // Size and alignment checks
+                    if std::mem::size_of::<$t>() < std::mem::size_of::<New>() {
+                        panic!(
+                            "The Old type is smaller than the New type you tried to replace it with: \n\
+                            Old: {} size: {}\n\
+                            New: {} size: {}",
+                            std::any::type_name::<$t>(),
+                            std::mem::size_of::<$t>(),
+                            std::any::type_name::<New>(),
+                            std::mem::size_of::<New>()
+                        );
+                    }
+
+                    if std::mem::align_of::<$t>() != std::mem::align_of::<New>() {
+                        panic!(
+                            "The Old type has a different alignment than the New type you tried to replace it with: \n\
+                            Old: {} alignment: {}\n\
+                            New: {} alignment: {}",
+                            std::any::type_name::<$t>(),
+                            std::mem::align_of::<$t>(),
+                            std::any::type_name::<New>(),
+                            std::mem::align_of::<New>()
+                        );
+                    }
+
+                    f(self)
+                }
+            }
+        )*
+    }
+}
+
+impl_replace_for_primitives!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char
+);
+
 impl<T> Replace<T> for Vec<T> {
     type OutputSelf<New> = Vec<New>;
     fn replace<New>(self, f: &mut impl FnMut(T) -> New) -> Self::OutputSelf<New> {
         self.into_iter().map(f).collect()
     }
-}
-
-pub trait ReplaceInPlace<Old> {
-    type OutputSelf<New>;
-    fn replace_in_place<New>(self, f: &mut impl FnMut(Old) -> New) -> Self::OutputSelf<New>;
 }
 
 impl<Old> ReplaceInPlace<Old> for Vec<Old> {

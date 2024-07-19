@@ -23,6 +23,9 @@ dependencies = [
 [[package]]
 name = "replace-type-in-place"
 version = "0.1.0"
+dependencies = [
+ "replace-type-in-place-derive",
+]
 
 [[package]]
 name = "replace-type-in-place-derive"
