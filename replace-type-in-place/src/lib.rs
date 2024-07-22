@@ -1,7 +1,11 @@
 #[cfg(feature = "derive")]
 pub use replace_type_in_place_derive::{Replace, ReplaceInPlace};
 
-use std::{any::type_name, mem, ptr};
+use std::{
+    any::type_name,
+    mem::{self, ManuallyDrop},
+    ptr,
+};
 
 pub trait Replace<Old> {
     type OutputSelf<New>;
@@ -11,6 +15,10 @@ pub trait Replace<Old> {
 pub trait ReplaceInPlace<Old> {
     type OutputSelf<New>;
     fn replace_in_place<New>(self, f: &mut impl FnMut(Old) -> New) -> Self::OutputSelf<New>;
+    unsafe fn replace_ptr_in_place<New>(
+        self_: *mut Self,
+        f: &mut impl FnMut(Old) -> New,
+    ) -> Self::OutputSelf<New>;
 }
 
 macro_rules! impl_replace_for_primitives {
@@ -53,6 +61,38 @@ macro_rules! impl_replace_for_primitives {
 
                     f(self)
                 }
+
+                unsafe fn replace_ptr_in_place<New>(
+                    self_: *mut Self,
+                    f: &mut impl FnMut($t) -> New,
+                ) -> Self::OutputSelf<New> {
+                    // Size and alignment checks
+                    if std::mem::size_of::<$t>() < std::mem::size_of::<New>() {
+                        panic!(
+                            "The Old type is smaller than the New type you tried to replace it with: \n\
+                            Old: {} size: {}\n\
+                            New: {} size: {}",
+                            std::any::type_name::<$t>(),
+                            std::mem::size_of::<$t>(),
+                            std::any::type_name::<New>(),
+                            std::mem::size_of::<New>()
+                        );
+                    }
+
+                    if std::mem::align_of::<$t>() != std::mem::align_of::<New>() {
+                        panic!(
+                            "The Old type has a different alignment than the New type you tried to replace it with: \n\
+                            Old: {} alignment: {}\n\
+                            New: {} alignment: {}",
+                            std::any::type_name::<$t>(),
+                            std::mem::align_of::<$t>(),
+                            std::any::type_name::<New>(),
+                            std::mem::align_of::<New>()
+                        );
+                    }
+
+                    f(ptr::read(self_))
+                }
             }
         )*
     }
@@ -72,7 +112,7 @@ impl<T> Replace<T> for Vec<T> {
 impl<Old> ReplaceInPlace<Old> for Vec<Old> {
     type OutputSelf<New> = Vec<New>;
 
-    fn replace_in_place<New>(mut self, f: &mut impl FnMut(Old) -> New) -> Self::OutputSelf<New> {
+    fn replace_in_place<New>(self, f: &mut impl FnMut(Old) -> New) -> Self::OutputSelf<New> {
         if mem::size_of::<Old>() != mem::size_of::<New>() {
             panic!(
                 "The Old type has a different size than the New type you tried to replace it with: \n\
@@ -124,14 +164,17 @@ impl<Old> ReplaceInPlace<Old> for Vec<Old> {
 
         // This is safe because we are checking size and alignment of the types above.
         unsafe {
-            for old in self.iter_mut() {
+            // The use of ManuallyDrop prevents the vec from being dropped if f panics.
+            // Without it the drop could be called on elements of the wrong type.
+            let mut vec = mem::ManuallyDrop::new(self);
+            for old in vec.iter_mut() {
                 let old = old as *mut Old;
                 let new = f(ptr::read(old));
 
                 ptr::write(old as *mut New, new);
             }
 
-            mem::transmute::<Vec<Old>, Vec<New>>(self)
+            mem::transmute::<ManuallyDrop<Vec<Old>>, Vec<New>>(vec)
         }
     }
 }

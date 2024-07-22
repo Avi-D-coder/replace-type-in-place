@@ -204,9 +204,9 @@ fn generate_replace_in_place_fields(
     param_name: &syn::Ident,
 ) -> proc_macro2::TokenStream {
     let checks = quote! {
-        if std::mem::size_of::<#param_name>() < std::mem::size_of::<New>() {
+        if std::mem::size_of::<#param_name>() != std::mem::size_of::<New>() {
             panic!(
-                "The Old type is smaller than the New type you tried to replace it with: \n\
+                "The Old type has a different size than the New type you tried to replace it with: \n\
                 Old: {} size: {}\n\
                 New: {} size: {}",
                 std::any::type_name::<#param_name>(),
@@ -264,28 +264,52 @@ fn generate_replace_in_place_fields(
                     let field_name = &f.ident;
                     let field_type = &f.ty;
                     if type_is_param(field_type, param_name) {
-                        quote! { #field_name: f(self.#field_name), }
+                        quote! {
+                            let old = std::ptr::read(&self.#field_name as *const #param_name);
+                            let new = f(old);
+                            std::ptr::write(&mut self.#field_name as *mut #param_name as *mut New, new);
+                        }
                     } else if type_contains_param(field_type, param_name) {
-                        quote! { #field_name: <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self.#field_name, f), }
+                        quote! {
+                            self.#field_name = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self.#field_name, f);
+                        }
                     } else {
-                        quote! { #field_name: self.#field_name, }
+                        quote! {}
                     }
                 });
-                quote! { #name { #(#field_replacements)* } }
+                quote! {
+                    let mut self_wrapped = std::mem::ManuallyDrop::new(self);
+                    #(#field_replacements)*
+                    unsafe {
+                        std::mem::transmute::<std::mem::ManuallyDrop<#name<#param_name>>, #name<New>>(self_wrapped)
+                    }
+                }
             }
             Fields::Unnamed(ref fields) => {
                 let field_replacements = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = syn::Index::from(i);
                     let field_type = &f.ty;
                     if type_is_param(field_type, param_name) {
-                        quote! { f(self.#index), }
+                        quote! {
+                            let old = std::ptr::read(&self_wrapped.#index as *const #param_name);
+                            let new = f(old);
+                            std::ptr::write(&mut self_wrapped.#index as *mut #param_name as *mut New, new);
+                        }
                     } else if type_contains_param(field_type, param_name) {
-                        quote! { <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self.#index, f), }
+                        quote! {
+                            self_wrapped.#index = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self_wrapped.#index, f);
+                        }
                     } else {
-                        quote! { self.#index, }
+                        quote! {}
                     }
                 });
-                quote! { #name(#(#field_replacements)*) }
+                quote! {
+                    let mut self_wrapped = std::mem::ManuallyDrop::new(self);
+                    #(#field_replacements)*
+                    unsafe {
+                        std::mem::transmute::<std::mem::ManuallyDrop<#name<#param_name>>, #name<New>>(self_wrapped)
+                    }
+                }
             }
             Fields::Unit => quote! { #name },
         },
@@ -298,47 +322,63 @@ fn generate_replace_in_place_fields(
                             let field_name = &f.ident;
                             let field_type = &f.ty;
                             if type_is_param(field_type, param_name) {
-                                quote! { #field_name: f(#field_name), }
+                                quote! {
+                                    let old = std::ptr::read(#field_name as *const #param_name);
+                                    let new = f(old);
+                                    std::ptr::write(#field_name as *mut #param_name as *mut New, new);
+                                }
                             } else if type_contains_param(field_type, param_name) {
-                                quote! { #field_name: <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(#field_name, f), }
+                                quote! {
+                                    *#field_name = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(std::mem::replace(#field_name, std::mem::uninitialized()), f);
+                                }
                             } else {
-                                quote! { #field_name, }
+                                quote! {}
                             }
                         });
-                        let field_patterns = fields.named.iter().map(|f| {
-                            let field_name = &f.ident;
-                            quote! { #field_name }
-                        });
+                        let field_names = fields.named.iter().map(|f| &f.ident);
                         quote! {
-                            #name::#variant_name { #(#field_patterns),* } => #name::#variant_name { #(#field_replacements)* },
+                            #name::#variant_name { #(ref mut #field_names),* } => {
+                                #(#field_replacements)*
+                            }
                         }
                     },
                     Fields::Unnamed(ref fields) => {
-                        let field_names: Vec<syn::Ident> = (0..fields.unnamed.len())
-                            .map(|i| format_ident!("field{}", i))
-                            .collect();
-                        let field_replacements = fields.unnamed.iter().zip(field_names.iter()).map(|(f, field_name)| {
+                        let field_replacements = fields.unnamed.iter().enumerate().map(|(i, f)| {
+                            let field_name = format_ident!("field{}", i);
                             let field_type = &f.ty;
                             if type_is_param(field_type, param_name) {
-                                quote! { f(#field_name), }
+                                quote! {
+                                    let old = std::ptr::read(#field_name as *const #param_name);
+                                    let new = f(old);
+                                    std::ptr::write(#field_name as *mut #param_name as *mut New, new);
+                                }
                             } else if type_contains_param(field_type, param_name) {
-                                quote! { <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(#field_name, f), }
+                                quote! {
+                                    *#field_name = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(std::mem::replace(#field_name, std::mem::uninitialized()), f);
+                                }
                             } else {
-                                quote! { #field_name, }
+                                quote! {}
                             }
                         });
+                        let field_names = (0..fields.unnamed.len()).map(|i| format_ident!("field{}", i));
                         quote! {
-                            #name::#variant_name(#(#field_names),*) => #name::#variant_name(#(#field_replacements)*),
+                            #name::#variant_name(#(ref mut #field_names),*) => {
+                                #(#field_replacements)*
+                            }
                         }
                     },
                     Fields::Unit => quote! {
-                        #name::#variant_name => #name::#variant_name,
+                        #name::#variant_name => {}
                     },
                 }
             });
             quote! {
-                match self {
+                let mut self_wrapped = std::mem::ManuallyDrop::new(self);
+                match &mut *self_wrapped {
                     #(#variant_replacements)*
+                }
+                unsafe {
+                    std::mem::transmute::<std::mem::ManuallyDrop<#name<#param_name>>, #name<New>>(self_wrapped)
                 }
             }
         }
@@ -347,7 +387,10 @@ fn generate_replace_in_place_fields(
 
     quote! {
         #checks
-        #replacement_logic
+        // This is safe because we are checking size and alignment of the types above.
+        unsafe {
+            #replacement_logic
+        }
     }
 }
 
