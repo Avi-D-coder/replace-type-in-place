@@ -7,10 +7,9 @@ pub fn derive_replace(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let generics = &input.generics;
-    let type_params = generics.type_params().collect::<Vec<_>>();
-    let replace_impls = generate_replace_impls(name, &type_params, &input.data, generics);
+    let replace_impls = generate_replace_impls(name, &input.data, generics);
     let expanded = quote! {
-        #(#replace_impls)*
+        #replace_impls
     };
     TokenStream::from(expanded)
 }
@@ -20,88 +19,134 @@ pub fn derive_replace_in_place(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let generics = &input.generics;
-    let type_params = generics.type_params().collect::<Vec<_>>();
-    let replace_in_place_impls = generate_replace_in_place_impls(name, &type_params, &input.data, generics);
+    let replace_in_place_impls = generate_replace_in_place_impls(name, &input.data, generics);
     let expanded = quote! {
-        #(#replace_in_place_impls)*
+        #replace_in_place_impls
     };
     TokenStream::from(expanded)
 }
 
 fn generate_replace_impls(
     name: &syn::Ident,
-    type_params: &[&TypeParam],
     data: &Data,
     generics: &syn::Generics,
-) -> Vec<proc_macro2::TokenStream> {
-    type_params
-        .iter()
-        .map(|&param| {
-            let param_name = &param.ident;
-            let replace_fields = generate_replace_fields(name, data, param_name);
-            let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-            
-            let extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
-                where_token: syn::Token![where](proc_macro2::Span::call_site()),
-                predicates: syn::punctuated::Punctuated::new(),
-            });
+) -> proc_macro2::TokenStream {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let type_params = generics.type_params().collect::<Vec<_>>();
+    let type_param_names: Vec<_> = type_params.iter().map(|tp| &tp.ident).collect();
 
-            let new_type_params = generics.type_params().map(|tp| {
-                if tp.ident == *param_name {
-                    quote!(New)
+    let replace_methods = (1..=8).map(|i| {
+        let method_name = format_ident!("replace_{}", i);
+        let generic_params: Vec<_> = (0..i).map(|j| format_ident!("A{}", j)).collect();
+        let fn_params: Vec<_> = type_param_names
+            .iter()
+            .take(i)
+            .enumerate()
+            .map(|(j, &tp)| {
+                let fn_name = format_ident!("f{}", j);
+                quote! { #fn_name: &mut impl FnMut(Self::#tp) -> #(#generic_params)::* }
+            })
+            .collect();
+        let output_params: Vec<_> = type_param_names
+            .iter()
+            .enumerate()
+            .map(|(j, &tp)| {
+                if j < i {
+                    quote! { #(#generic_params)::* }
                 } else {
-                    quote!(#tp)
+                    quote! { Self::#tp }
                 }
-            });
+            })
+            .collect();
+        let replace_fields = generate_replace_fields(name, data, &type_param_names, i);
 
-            quote! {
-                impl #impl_generics replace_type_in_place::Replace<#param_name> for #name #ty_generics #extended_where_clause {
-                    type OutputSelf<New> = #name<#(#new_type_params),*>;
-                    fn replace<New>(self, f: &mut impl FnMut(#param_name) -> New) -> Self::OutputSelf<New> {
-                        #replace_fields
-                    }
-                }
+        quote! {
+            fn #method_name<#(#generic_params),*>(
+                self,
+                #(#fn_params),*
+            ) -> Self::OutputSelf<#(#output_params),*> {
+                #replace_fields
             }
-        })
-        .collect()
+        }
+    });
+
+    quote! {
+        impl #impl_generics replace_type_in_place::Replace for #name #ty_generics #where_clause {
+            type AOld = #(#type_param_names)::*;
+            type BOld = ();
+            type COld = ();
+            type DOld = ();
+            type EOld = ();
+            type FOld = ();
+            type GOld = ();
+            type HOld = ();
+            type OutputSelf<AN, BN, CN, DN, EN, FN, GN, HN> = #name<AN, BN, CN, DN, EN, FN, GN, HN>;
+
+            #(#replace_methods)*
+        }
+    }
 }
 
 fn generate_replace_in_place_impls(
     name: &syn::Ident,
-    type_params: &[&TypeParam],
     data: &Data,
     generics: &syn::Generics,
-) -> Vec<proc_macro2::TokenStream> {
-    type_params
-        .iter()
-        .map(|&param| {
-            let param_name = &param.ident;
-            let replace_in_place_fields = generate_replace_in_place_fields(name, data, param_name);
-            let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+) -> proc_macro2::TokenStream {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let type_params = generics.type_params().collect::<Vec<_>>();
+    let type_param_names: Vec<_> = type_params.iter().map(|tp| &tp.ident).collect();
 
-            let extended_where_clause = where_clause.cloned().unwrap_or(syn::WhereClause {
-                where_token: syn::Token![where](proc_macro2::Span::call_site()),
-                predicates: syn::punctuated::Punctuated::new(),
-            });
-
-            let new_type_params = generics.type_params().map(|tp| {
-                if tp.ident == *param_name {
-                    quote!(New)
+    let replace_in_place_methods = (1..=8).map(|i| {
+        let method_name = format_ident!("replace_in_place_{}", i);
+        let generic_params: Vec<_> = (0..i).map(|j| format_ident!("A{}", j)).collect();
+        let fn_params: Vec<_> = type_param_names
+            .iter()
+            .take(i)
+            .enumerate()
+            .map(|(j, &tp)| {
+                let fn_name = format_ident!("f{}", j);
+                quote! { #fn_name: &mut impl FnMut(Self::#tp) -> #(#generic_params)::* }
+            })
+            .collect();
+        let output_params: Vec<_> = type_param_names
+            .iter()
+            .enumerate()
+            .map(|(j, &tp)| {
+                if j < i {
+                    quote! { #(#generic_params)::* }
                 } else {
-                    quote!(#tp)
+                    quote! { Self::#tp }
                 }
-            });
-            
-            quote! {
-                impl #impl_generics replace_type_in_place::ReplaceInPlace<#param_name> for #name #ty_generics #extended_where_clause {
-                    type OutputSelf<New> = #name<#(#new_type_params),*>;
-                    fn replace_in_place<New>(self, f: &mut impl FnMut(#param_name) -> New) -> <Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New> {
-                        #replace_in_place_fields
-                    }
-                }
+            })
+            .collect();
+        let replace_in_place_fields =
+            generate_replace_in_place_fields(name, data, &type_param_names, i);
+
+        quote! {
+            fn #method_name<#(#generic_params),*>(
+                self,
+                #(#fn_params),*
+            ) -> Self::OutputSelf<#(#output_params),*> {
+                #replace_in_place_fields
             }
-        })
-        .collect()
+        }
+    });
+
+    quote! {
+        impl #impl_generics replace_type_in_place::ReplaceInPlace for #name #ty_generics #where_clause {
+            type AOld = #(#type_param_names)::*;
+            type BOld = ();
+            type COld = ();
+            type DOld = ();
+            type EOld = ();
+            type FOld = ();
+            type GOld = ();
+            type HOld = ();
+            type OutputSelf<AN, BN, CN, DN, EN, FN, GN, HN> = #name<AN, BN, CN, DN, EN, FN, GN, HN>;
+
+            #(#replace_in_place_methods)*
+        }
+    }
 }
 
 fn generate_replace_fields(
@@ -198,80 +243,92 @@ fn generate_replace_fields(
     }
 }
 
+fn type_is_param(ty: &syn::Type, params: &[&syn::Ident]) -> bool {
+    match ty {
+        syn::Type::Path(type_path) if type_path.path.segments.len() == 1 => {
+            params.contains(&&type_path.path.segments[0].ident)
+        }
+        _ => false,
+    }
+}
+
+fn type_contains_param(ty: &syn::Type, params: &[&syn::Ident]) -> bool {
+    match ty {
+        syn::Type::Path(type_path) => type_path.path.segments.iter().any(|segment| {
+            params.contains(&&segment.ident)
+                || match &segment.arguments {
+                    syn::PathArguments::AngleBracketed(args) => args.args.iter().any(|arg| {
+                        if let syn::GenericArgument::Type(t) = arg {
+                            type_contains_param(t, params)
+                        } else {
+                            false
+                        }
+                    }),
+                    _ => false,
+                }
+        }),
+        _ => false,
+    }
+}
+
 fn generate_replace_in_place_fields(
     name: &syn::Ident,
     data: &Data,
-    param_name: &syn::Ident,
+    type_params: &[&syn::Ident],
+    num_params: usize,
 ) -> proc_macro2::TokenStream {
-    let checks = quote! {
-        if std::mem::size_of::<#param_name>() != std::mem::size_of::<New>() {
-            panic!(
-                "The Old type has a different size than the New type you tried to replace it with: \n\
-                Old: {} size: {}\n\
-                New: {} size: {}",
-                std::any::type_name::<#param_name>(),
-                std::mem::size_of::<#param_name>(),
-                std::any::type_name::<New>(),
-                std::mem::size_of::<New>()
-            );
+    let checks = (0..num_params).map(|i| {
+        let param = type_params[i];
+        let new_type = format_ident!("A{}", i);
+        quote! {
+            if std::mem::size_of::<#param>() != std::mem::size_of::<#new_type>() {
+                panic!(
+                    "The Old type has a different size than the New type you tried to replace it with: \n\
+                    Old: {} size: {}\n\
+                    New: {} size: {}",
+                    std::any::type_name::<#param>(),
+                    std::mem::size_of::<#param>(),
+                    std::any::type_name::<#new_type>(),
+                    std::mem::size_of::<#new_type>()
+                );
+            }
+
+            if std::mem::align_of::<#param>() != std::mem::align_of::<#new_type>() {
+                panic!(
+                    "The Old type has a different alignment than the New type you tried to replace it with: \n\
+                    Old: {} alignment: {}\n\
+                    New: {} alignment: {}",
+                    std::any::type_name::<#param>(),
+                    std::mem::align_of::<#param>(),
+                    std::any::type_name::<#new_type>(),
+                    std::mem::align_of::<#new_type>()
+                );
+            }
         }
+    });
 
-        if std::mem::align_of::<#param_name>() != std::mem::align_of::<New>() {
-            panic!(
-                "The Old type has a different alignment than the New type you tried to replace it with: \n\
-                Old: {} alignment: {}\n\
-                New: {} alignment: {}",
-                std::any::type_name::<#param_name>(),
-                std::mem::align_of::<#param_name>(),
-                std::any::type_name::<New>(),
-                std::mem::align_of::<New>()
-            );
-        }
-
-        let size_of_old_self = std::mem::size_of::<Self>();
-        let size_of_new_self = std::mem::size_of::<<Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New>>();
-
-        if size_of_old_self != size_of_new_self {
-            panic!(
-                "The size of the {}<Old> is not the same as the size of the {}<New>: \n\
-                {}<Old> size: {}\n\
-                {}<New> size: {}",
-                stringify!(#name), stringify!(#name),
-                stringify!(#name), size_of_old_self,
-                stringify!(#name), size_of_new_self
-            );
-        }
-
-        let align_of_old_self = std::mem::align_of::<Self>();
-        let align_of_new_self = std::mem::align_of::<<Self as replace_type_in_place::ReplaceInPlace<#param_name>>::OutputSelf<New>>();
-
-        if align_of_old_self != align_of_new_self {
-            panic!(
-                "The alignment of the {}<Old> is not the same as the alignment of the {}<New>: \n\
-                {}<Old> alignment: {}\n\
-                {}<New> alignment: {}",
-                stringify!(#name), stringify!(#name),
-                stringify!(#name), align_of_old_self,
-                stringify!(#name), align_of_new_self
-            );
-        }
-    };
-
-    let replacement_logic = match *data {
+    let replacement_logic = match data {
         Data::Struct(ref data) => match data.fields {
             Fields::Named(ref fields) => {
                 let field_replacements = fields.named.iter().map(|f| {
                     let field_name = &f.ident;
                     let field_type = &f.ty;
-                    if type_is_param(field_type, param_name) {
-                        quote! {
-                            let old = std::ptr::read(&self.#field_name as *const #param_name);
-                            let new = f(old);
-                            std::ptr::write(&mut self.#field_name as *mut #param_name as *mut New, new);
+                    if let Some(index) = type_params.iter().position(|&p| type_is_param(field_type, &[p])) {
+                        if index < num_params {
+                            let f_ident = format_ident!("f{}", index);
+                            quote! {
+                                let old = std::ptr::read(&self.#field_name as *const #field_type);
+                                let new = #f_ident(old);
+                                std::ptr::write(&mut self.#field_name as *mut #field_type as *mut _, new);
+                            }
+                        } else {
+                            quote! {}
                         }
-                    } else if type_contains_param(field_type, param_name) {
+                    } else if type_contains_param(field_type, type_params) {
+                        let method_name = format_ident!("replace_in_place_{}", num_params);
+                        let f_idents: Vec<_> = (0..num_params).map(|i| format_ident!("f{}", i)).collect();
                         quote! {
-                            self.#field_name = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self.#field_name, f);
+                            self.#field_name = <#field_type as replace_type_in_place::ReplaceInPlace>::#method_name(self.#field_name, #(#f_idents),*);
                         }
                     } else {
                         quote! {}
@@ -281,7 +338,7 @@ fn generate_replace_in_place_fields(
                     let mut self_wrapped = std::mem::ManuallyDrop::new(self);
                     #(#field_replacements)*
                     unsafe {
-                        std::mem::transmute::<std::mem::ManuallyDrop<#name<#param_name>>, #name<New>>(self_wrapped)
+                        std::mem::transmute::<std::mem::ManuallyDrop<#name<#(#type_params),*>>, #name<#(#type_params),*>>(self_wrapped)
                     }
                 }
             }
@@ -289,15 +346,22 @@ fn generate_replace_in_place_fields(
                 let field_replacements = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = syn::Index::from(i);
                     let field_type = &f.ty;
-                    if type_is_param(field_type, param_name) {
-                        quote! {
-                            let old = std::ptr::read(&self_wrapped.#index as *const #param_name);
-                            let new = f(old);
-                            std::ptr::write(&mut self_wrapped.#index as *mut #param_name as *mut New, new);
+                    if let Some(param_index) = type_params.iter().position(|&p| type_is_param(field_type, &[p])) {
+                        if param_index < num_params {
+                            let f_ident = format_ident!("f{}", param_index);
+                            quote! {
+                                let old = std::ptr::read(&self_wrapped.#index as *const #field_type);
+                                let new = #f_ident(old);
+                                std::ptr::write(&mut self_wrapped.#index as *mut #field_type as *mut _, new);
+                            }
+                        } else {
+                            quote! {}
                         }
-                    } else if type_contains_param(field_type, param_name) {
+                    } else if type_contains_param(field_type, type_params) {
+                        let method_name = format_ident!("replace_in_place_{}", num_params);
+                        let f_idents: Vec<_> = (0..num_params).map(|i| format_ident!("f{}", i)).collect();
                         quote! {
-                            self_wrapped.#index = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(self_wrapped.#index, f);
+                            self_wrapped.#index = <#field_type as replace_type_in_place::ReplaceInPlace>::#method_name(self_wrapped.#index, #(#f_idents),*);
                         }
                     } else {
                         quote! {}
@@ -307,7 +371,7 @@ fn generate_replace_in_place_fields(
                     let mut self_wrapped = std::mem::ManuallyDrop::new(self);
                     #(#field_replacements)*
                     unsafe {
-                        std::mem::transmute::<std::mem::ManuallyDrop<#name<#param_name>>, #name<New>>(self_wrapped)
+                        std::mem::transmute::<std::mem::ManuallyDrop<#name<#(#type_params),*>>, #name<#(#type_params),*>>(self_wrapped)
                     }
                 }
             }
@@ -321,15 +385,22 @@ fn generate_replace_in_place_fields(
                         let field_replacements = fields.named.iter().map(|f| {
                             let field_name = &f.ident;
                             let field_type = &f.ty;
-                            if type_is_param(field_type, param_name) {
-                                quote! {
-                                    let old = std::ptr::read(#field_name as *const #param_name);
-                                    let new = f(old);
-                                    std::ptr::write(#field_name as *mut #param_name as *mut New, new);
+                            if let Some(index) = type_params.iter().position(|&p| type_is_param(field_type, &[p])) {
+                                if index < num_params {
+                                    let f_ident = format_ident!("f{}", index);
+                                    quote! {
+                                        let old = std::ptr::read(#field_name as *const #field_type);
+                                        let new = #f_ident(old);
+                                        std::ptr::write(#field_name as *mut #field_type as *mut _, new);
+                                    }
+                                } else {
+                                    quote! {}
                                 }
-                            } else if type_contains_param(field_type, param_name) {
+                            } else if type_contains_param(field_type, type_params) {
+                                let method_name = format_ident!("replace_in_place_{}", num_params);
+                                let f_idents: Vec<_> = (0..num_params).map(|i| format_ident!("f{}", i)).collect();
                                 quote! {
-                                    *#field_name = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(std::mem::replace(#field_name, std::mem::uninitialized()), f);
+                                    *#field_name = <#field_type as replace_type_in_place::ReplaceInPlace>::#method_name(std::mem::replace(#field_name, std::mem::uninitialized()), #(#f_idents),*);
                                 }
                             } else {
                                 quote! {}
@@ -346,15 +417,22 @@ fn generate_replace_in_place_fields(
                         let field_replacements = fields.unnamed.iter().enumerate().map(|(i, f)| {
                             let field_name = format_ident!("field{}", i);
                             let field_type = &f.ty;
-                            if type_is_param(field_type, param_name) {
-                                quote! {
-                                    let old = std::ptr::read(#field_name as *const #param_name);
-                                    let new = f(old);
-                                    std::ptr::write(#field_name as *mut #param_name as *mut New, new);
+                            if let Some(index) = type_params.iter().position(|&p| type_is_param(field_type, &[p])) {
+                                if index < num_params {
+                                    let f_ident = format_ident!("f{}", index);
+                                    quote! {
+                                        let old = std::ptr::read(#field_name as *const #field_type);
+                                        let new = #f_ident(old);
+                                        std::ptr::write(#field_name as *mut #field_type as *mut _, new);
+                                    }
+                                } else {
+                                    quote! {}
                                 }
-                            } else if type_contains_param(field_type, param_name) {
+                            } else if type_contains_param(field_type, type_params) {
+                                let method_name = format_ident!("replace_in_place_{}", num_params);
+                                let f_idents: Vec<_> = (0..num_params).map(|i| format_ident!("f{}", i)).collect();
                                 quote! {
-                                    *#field_name = <#field_type as replace_type_in_place::ReplaceInPlace<#param_name>>::replace_in_place(std::mem::replace(#field_name, std::mem::uninitialized()), f);
+                                    *#field_name = <#field_type as replace_type_in_place::ReplaceInPlace>::#method_name(std::mem::replace(#field_name, std::mem::uninitialized()), #(#f_idents),*);
                                 }
                             } else {
                                 quote! {}
@@ -378,7 +456,7 @@ fn generate_replace_in_place_fields(
                     #(#variant_replacements)*
                 }
                 unsafe {
-                    std::mem::transmute::<std::mem::ManuallyDrop<#name<#param_name>>, #name<New>>(self_wrapped)
+                    std::mem::transmute::<std::mem::ManuallyDrop<#name<#(#type_params),*>>, #name<#(#type_params),*>>(self_wrapped)
                 }
             }
         }
@@ -386,38 +464,10 @@ fn generate_replace_in_place_fields(
     };
 
     quote! {
-        #checks
+        #(#checks)*
         // This is safe because we are checking size and alignment of the types above.
         unsafe {
             #replacement_logic
         }
-    }
-}
-
-fn type_is_param(ty: &syn::Type, param: &syn::Ident) -> bool {
-    match ty {
-        syn::Type::Path(type_path) if type_path.path.segments.len() == 1 => {
-            type_path.path.segments[0].ident == *param
-        },
-        _ => false,
-    }
-}
-
-fn type_contains_param(ty: &syn::Type, param: &syn::Ident) -> bool {
-    match ty {
-        syn::Type::Path(type_path) => type_path.path.segments.iter().any(|segment| {
-            segment.ident == *param || 
-            match &segment.arguments {
-                syn::PathArguments::AngleBracketed(args) => args.args.iter().any(|arg| {
-                    if let syn::GenericArgument::Type(t) = arg {
-                        type_contains_param(t, param)
-                    } else {
-                        false
-                    }
-                }),
-                _ => false,
-            }
-        }),
-        _ => false,
     }
 }
