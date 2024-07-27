@@ -1,8 +1,8 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 
-// #[cfg(feature = "derive")]
-// pub use replace_type_in_place_derive::{Replace, ReplaceInPlace};
+#[cfg(feature = "derive")]
+pub use replace_type_in_place_derive::ReplaceInPlace;
 
 use std::{
     any::type_name,
