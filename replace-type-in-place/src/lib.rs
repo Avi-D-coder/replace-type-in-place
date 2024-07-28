@@ -453,45 +453,6 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
     }
 
     #[inline(always)]
-    fn replace_in_place_5<A, B, C, D, E>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-    ) -> Self::OutputSelf<A, B, C, D, E, (), (), ()> {
-        self.replace_in_place_4(fa, fb, fc, fd)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_6<A, B, C, D, E, F>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, (), ()> {
-        self.replace_in_place_4(fa, fb, fc, fd)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_7<A, B, C, D, E, F, G>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-        _fg: &impl Fn(Self::GOld) -> G,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, ()> {
-        self.replace_in_place_4(fa, fb, fc, fd)
-    }
-
-    #[inline(always)]
     fn replace_in_place_8<A, B, C, D, E, F, G, H>(
         self,
         fa: &impl Fn(Self::AOld) -> A,
@@ -569,69 +530,6 @@ impl<AOld> ReplaceInPlace for Vec<AOld> {
 
             mem::transmute::<ManuallyDrop<Vec<Self::AOld>>, Vec<A>>(vec)
         }
-    }
-
-    fn replace_in_place_2<A, B>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-    ) -> Self::OutputSelf<A, B, (), (), (), (), (), ()> {
-        self.replace_in_place_1(fa)
-    }
-
-    fn replace_in_place_3<A, B, C>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-    ) -> Self::OutputSelf<A, B, C, (), (), (), (), ()> {
-        self.replace_in_place_1(fa)
-    }
-
-    fn replace_in_place_4<A, B, C, D>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-    ) -> Self::OutputSelf<A, B, C, D, (), (), (), ()> {
-        self.replace_in_place_1(fa)
-    }
-
-    fn replace_in_place_5<A, B, C, D, E>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-    ) -> Self::OutputSelf<A, B, C, D, E, (), (), ()> {
-        self.replace_in_place_1(fa)
-    }
-
-    fn replace_in_place_6<A, B, C, D, E, F>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, (), ()> {
-        self.replace_in_place_1(fa)
-    }
-
-    fn replace_in_place_7<A, B, C, D, E, F, G>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-        _fg: &impl Fn(Self::GOld) -> G,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, ()> {
-        self.replace_in_place_1(fa)
     }
 
     fn replace_in_place_8<A, B, C, D, E, F, G, H>(
