@@ -227,127 +227,84 @@ pub trait ReplaceInPlace: Sized {
         Self::GOld,
         Self::HOld,
     >;
-    // where
-    // Self::OutputSelf<
-    //     A,
-    //     Self::BOld,
-    //     Self::COld,
-    //     Self::DOld,
-    //     Self::EOld,
-    //     Self::FOld,
-    //     Self::GOld,
-    //     Self::HOld,
-    // >: AssertSizes<Self> + AssertAlignments<Self>,
-    // A: AssertSizes<Self::AOld> + AssertAlignments<Self::AOld>;
 
-    // fn replace_in_place_2<A, B>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    // ) -> Self::OutputSelf<
-    //     A,
-    //     B,
-    //     Self::COld,
-    //     Self::DOld,
-    //     Self::EOld,
-    //     Self::FOld,
-    //     Self::GOld,
-    //     Self::HOld,
-    // >;
+    fn replace_in_place_2<A, B>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+    ) -> Self::OutputSelf<
+        A,
+        B,
+        Self::COld,
+        Self::DOld,
+        Self::EOld,
+        Self::FOld,
+        Self::GOld,
+        Self::HOld,
+    >;
 
-    // fn replace_in_place_3<A, B, C>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    //     fc: &mut impl FnMut(Self::COld) -> C,
-    // ) -> Self::OutputSelf<A, B, C, Self::DOld, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
+    fn replace_in_place_3<A, B, C>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+    ) -> Self::OutputSelf<A, B, C, Self::DOld, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
 
-    // fn replace_in_place_4<A, B, C, D>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    //     fc: &mut impl FnMut(Self::COld) -> C,
-    //     fd: &mut impl FnMut(Self::DOld) -> D,
-    // ) -> Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
+    fn replace_in_place_4<A, B, C, D>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+    ) -> Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
 
-    // fn replace_in_place_5<A, B, C, D, E>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    //     fc: &mut impl FnMut(Self::COld) -> C,
-    //     fd: &mut impl FnMut(Self::DOld) -> D,
-    //     fe: &mut impl FnMut(Self::EOld) -> E,
-    // ) -> Self::OutputSelf<A, B, C, D, E, Self::FOld, Self::GOld, Self::HOld>;
+    fn replace_in_place_5<A, B, C, D, E>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        fe: &mut impl FnMut(Self::EOld) -> E,
+    ) -> Self::OutputSelf<A, B, C, D, E, Self::FOld, Self::GOld, Self::HOld>;
 
-    // fn replace_in_place_6<A, B, C, D, E, F>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    //     fc: &mut impl FnMut(Self::COld) -> C,
-    //     fd: &mut impl FnMut(Self::DOld) -> D,
-    //     fe: &mut impl FnMut(Self::EOld) -> E,
-    //     ff: &mut impl FnMut(Self::FOld) -> F,
-    // ) -> Self::OutputSelf<A, B, C, D, E, F, Self::GOld, Self::HOld>;
+    fn replace_in_place_6<A, B, C, D, E, F>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        fe: &mut impl FnMut(Self::EOld) -> E,
+        ff: &mut impl FnMut(Self::FOld) -> F,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, Self::GOld, Self::HOld>;
 
-    // fn replace_in_place_7<A, B, C, D, E, F, G>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    //     fc: &mut impl FnMut(Self::COld) -> C,
-    //     fd: &mut impl FnMut(Self::DOld) -> D,
-    //     fe: &mut impl FnMut(Self::EOld) -> E,
-    //     ff: &mut impl FnMut(Self::FOld) -> F,
-    //     fg: &mut impl FnMut(Self::GOld) -> G,
-    // ) -> Self::OutputSelf<A, B, C, D, E, F, G, Self::HOld>;
+    fn replace_in_place_7<A, B, C, D, E, F, G>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        fe: &mut impl FnMut(Self::EOld) -> E,
+        ff: &mut impl FnMut(Self::FOld) -> F,
+        fg: &mut impl FnMut(Self::GOld) -> G,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, Self::HOld>;
 
-    // fn replace_in_place_8<A, B, C, D, E, F, G, H>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     fb: &mut impl FnMut(Self::BOld) -> B,
-    //     fc: &mut impl FnMut(Self::COld) -> C,
-    //     fd: &mut impl FnMut(Self::DOld) -> D,
-    //     fe: &mut impl FnMut(Self::EOld) -> E,
-    //     ff: &mut impl FnMut(Self::FOld) -> F,
-    //     fg: &mut impl FnMut(Self::GOld) -> G,
-    //     fh: &mut impl FnMut(Self::HOld) -> H,
-    // ) -> Self::OutputSelf<A, B, C, D, E, F, G, H>;
+    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        fe: &mut impl FnMut(Self::EOld) -> E,
+        ff: &mut impl FnMut(Self::FOld) -> F,
+        fg: &mut impl FnMut(Self::GOld) -> G,
+        fh: &mut impl FnMut(Self::HOld) -> H,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H>;
 }
 
 pub trait AssertSizes<T: Sized>: Sized {
     const ASSERT_EQUAL: () = {
         if mem::size_of::<Self>() != mem::size_of::<T>() {
-            match mem::size_of::<Self>() {
-                0 => panic!("The size of the Self type `0` is not equal to the size of T"),
-                1 => panic!("The size of the Self type `1` is not equal to the size of T"),
-                2 => panic!("The size of the Self type `2` is not equal to the size of T"),
-                3 => panic!("The size of the Self type `3` is not equal to the size of T"),
-                4 => panic!("The size of the Self type `4` is not equal to the size of T"),
-                5 => panic!("The size of the Self type `5` is not equal to the size of T"),
-                6 => panic!("The size of the Self type `6` is not equal to the size of T"),
-                7 => panic!("The size of the Self type `7` is not equal to the size of T"),
-                8 => panic!("The size of the Self type `8` is not equal to the size of T"),
-                9 => panic!("The size of the Self type `9` is not equal to the size of T"),
-                10 => panic!("The size of the Self type `10` is not equal to the size of T"),
-                11 => panic!("The size of the Self type `11` is not equal to the size of T"),
-                12 => panic!("The size of the Self type `12` is not equal to the size of T"),
-                13 => panic!("The size of the Self type `13` is not equal to the size of T"),
-                14 => panic!("The size of the Self type `14` is not equal to the size of T"),
-                15 => panic!("The size of the Self type `15` is not equal to the size of T"),
-                16 => panic!("The size of the Self type `16` is not equal to the size of T"),
-                17 => panic!("The size of the Self type `17` is not equal to the size of T"),
-                18 => panic!("The size of the Self type `18` is not equal to the size of T"),
-                19 => panic!("The size of the Self type `19` is not equal to the size of T"),
-                20 => panic!("The size of the Self type `20` is not equal to the size of T"),
-                21 => panic!("The size of the Self type `21` is not equal to the size of T"),
-                22 => panic!("The size of the Self type `22` is not equal to the size of T"),
-                23 => panic!("The size of the Self type `23` is not equal to the size of T"),
-                24 => panic!("The size of the Self type `24` is not equal to the size of T"),
-                25 => panic!("The size of the Self type `25` is not equal to the size of T"),
-                26 => panic!("The size of the Self type `26` is not equal to the size of T"),
-                27 => panic!("The size of the Self type `27` is not equal to the size of T"),
-
-                _ => panic!("The size of the Self type is not equal to the size of T"),
-            }
+            panic!("The size of the Self type is not equal to the size of T");
         }
     };
 
@@ -474,82 +431,82 @@ impl<AOld> ReplaceInPlace for Vec<AOld> {
         }
     }
 
-    // fn replace_in_place_2<A, B>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    // ) -> Self::OutputSelf<A, B, (), (), (), (), (), ()> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_2<A, B>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+    ) -> Self::OutputSelf<A, B, (), (), (), (), (), ()> {
+        self.replace_in_place_1(fa)
+    }
 
-    // fn replace_in_place_3<A, B, C>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    //     _fc: &mut impl FnMut(Self::COld) -> C,
-    // ) -> Self::OutputSelf<A, B, C, (), (), (), (), ()> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_3<A, B, C>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+        _fc: &mut impl FnMut(Self::COld) -> C,
+    ) -> Self::OutputSelf<A, B, C, (), (), (), (), ()> {
+        self.replace_in_place_1(fa)
+    }
 
-    // fn replace_in_place_4<A, B, C, D>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    //     _fc: &mut impl FnMut(Self::COld) -> C,
-    //     _fd: &mut impl FnMut(Self::DOld) -> D,
-    // ) -> Self::OutputSelf<A, B, C, D, (), (), (), ()> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_4<A, B, C, D>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+        _fc: &mut impl FnMut(Self::COld) -> C,
+        _fd: &mut impl FnMut(Self::DOld) -> D,
+    ) -> Self::OutputSelf<A, B, C, D, (), (), (), ()> {
+        self.replace_in_place_1(fa)
+    }
 
-    // fn replace_in_place_5<A, B, C, D, E>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    //     _fc: &mut impl FnMut(Self::COld) -> C,
-    //     _fd: &mut impl FnMut(Self::DOld) -> D,
-    //     _fe: &mut impl FnMut(Self::EOld) -> E,
-    // ) -> Self::OutputSelf<A, B, C, D, E, (), (), ()> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_5<A, B, C, D, E>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+        _fc: &mut impl FnMut(Self::COld) -> C,
+        _fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+    ) -> Self::OutputSelf<A, B, C, D, E, (), (), ()> {
+        self.replace_in_place_1(fa)
+    }
 
-    // fn replace_in_place_6<A, B, C, D, E, F>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    //     _fc: &mut impl FnMut(Self::COld) -> C,
-    //     _fd: &mut impl FnMut(Self::DOld) -> D,
-    //     _fe: &mut impl FnMut(Self::EOld) -> E,
-    //     _ff: &mut impl FnMut(Self::FOld) -> F,
-    // ) -> Self::OutputSelf<A, B, C, D, E, F, (), ()> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_6<A, B, C, D, E, F>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+        _fc: &mut impl FnMut(Self::COld) -> C,
+        _fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+        _ff: &mut impl FnMut(Self::FOld) -> F,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, (), ()> {
+        self.replace_in_place_1(fa)
+    }
 
-    // fn replace_in_place_7<A, B, C, D, E, F, G>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    //     _fc: &mut impl FnMut(Self::COld) -> C,
-    //     _fd: &mut impl FnMut(Self::DOld) -> D,
-    //     _fe: &mut impl FnMut(Self::EOld) -> E,
-    //     _ff: &mut impl FnMut(Self::FOld) -> F,
-    //     _fg: &mut impl FnMut(Self::GOld) -> G,
-    // ) -> Self::OutputSelf<A, B, C, D, E, F, G, ()> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_7<A, B, C, D, E, F, G>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+        _fc: &mut impl FnMut(Self::COld) -> C,
+        _fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+        _ff: &mut impl FnMut(Self::FOld) -> F,
+        _fg: &mut impl FnMut(Self::GOld) -> G,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, ()> {
+        self.replace_in_place_1(fa)
+    }
 
-    // fn replace_in_place_8<A, B, C, D, E, F, G, H>(
-    //     self,
-    //     fa: &mut impl FnMut(Self::AOld) -> A,
-    //     _fb: &mut impl FnMut(Self::BOld) -> B,
-    //     _fc: &mut impl FnMut(Self::COld) -> C,
-    //     _fd: &mut impl FnMut(Self::DOld) -> D,
-    //     _fe: &mut impl FnMut(Self::EOld) -> E,
-    //     _ff: &mut impl FnMut(Self::FOld) -> F,
-    //     _fg: &mut impl FnMut(Self::GOld) -> G,
-    //     _fh: &mut impl FnMut(Self::HOld) -> H,
-    // ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
-    //     self.replace_in_place_1(fa)
-    // }
+    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        _fb: &mut impl FnMut(Self::BOld) -> B,
+        _fc: &mut impl FnMut(Self::COld) -> C,
+        _fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+        _ff: &mut impl FnMut(Self::FOld) -> F,
+        _fg: &mut impl FnMut(Self::GOld) -> G,
+        _fh: &mut impl FnMut(Self::HOld) -> H,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
+        self.replace_in_place_1(fa)
+    }
 }
 
 #[cfg(test)]
