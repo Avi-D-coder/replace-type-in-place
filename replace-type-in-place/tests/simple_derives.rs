@@ -4,22 +4,18 @@
 // struct NamedStruct<T> {
 //     field1: T,
 //     field2: Vec<T>,
+//     field3: u64,
 // }
 
 // #[derive(ReplaceInPlace, Debug, PartialEq)]
-// struct TupleStruct<T>(T, Vec<T>);
+// struct TupleStruct<T>(bool, Vec<T>);
 
 // #[derive(ReplaceInPlace, Debug, PartialEq)]
-// enum TestEnum<T> {
-//     Variant1 { field: T },
-//     Variant2(T, Vec<T>),
+// enum TestEnum<A, B, C> {
+//     Variant1 { field: A },
+//     Variant2(B, Vec<A>),
 //     Variant3,
-// }
-
-// #[derive(ReplaceInPlace, Debug, PartialEq)]
-// struct GenericStruct<T, U> {
-//     field_t: T,
-//     field_u: U,
+//     Variant4(C),
 // }
 
 // #[test]

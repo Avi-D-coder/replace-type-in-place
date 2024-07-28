@@ -218,6 +218,7 @@ pub trait ReplaceInPlace: Sized {
     type HOld;
     type OutputSelf<A, B, C, D, E, F, G, H>;
 
+    #[inline(always)]
     fn replace_in_place_1<A>(
         self,
         f: &mut impl FnMut(Self::AOld) -> A,
@@ -230,8 +231,11 @@ pub trait ReplaceInPlace: Sized {
         Self::FOld,
         Self::GOld,
         Self::HOld,
-    >;
+    > {
+        self.replace_in_place_2(f, &mut |b| b)
+    }
 
+    #[inline(always)]
     fn replace_in_place_2<A, B>(
         self,
         fa: &mut impl FnMut(Self::AOld) -> A,
@@ -245,23 +249,32 @@ pub trait ReplaceInPlace: Sized {
         Self::FOld,
         Self::GOld,
         Self::HOld,
-    >;
+    > {
+        self.replace_in_place_3(fa, fb, &mut |c| c)
+    }
 
+    #[inline(always)]
     fn replace_in_place_3<A, B, C>(
         self,
         fa: &mut impl FnMut(Self::AOld) -> A,
         fb: &mut impl FnMut(Self::BOld) -> B,
         fc: &mut impl FnMut(Self::COld) -> C,
-    ) -> Self::OutputSelf<A, B, C, Self::DOld, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
+    ) -> Self::OutputSelf<A, B, C, Self::DOld, Self::EOld, Self::FOld, Self::GOld, Self::HOld> {
+        self.replace_in_place_4(fa, fb, fc, &mut |d| d)
+    }
 
+    #[inline(always)]
     fn replace_in_place_4<A, B, C, D>(
         self,
         fa: &mut impl FnMut(Self::AOld) -> A,
         fb: &mut impl FnMut(Self::BOld) -> B,
         fc: &mut impl FnMut(Self::COld) -> C,
         fd: &mut impl FnMut(Self::DOld) -> D,
-    ) -> Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
+    ) -> Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld> {
+        self.replace_in_place_5(fa, fb, fc, fd, &mut |e| e)
+    }
 
+    #[inline(always)]
     fn replace_in_place_5<A, B, C, D, E>(
         self,
         fa: &mut impl FnMut(Self::AOld) -> A,
@@ -269,8 +282,11 @@ pub trait ReplaceInPlace: Sized {
         fc: &mut impl FnMut(Self::COld) -> C,
         fd: &mut impl FnMut(Self::DOld) -> D,
         fe: &mut impl FnMut(Self::EOld) -> E,
-    ) -> Self::OutputSelf<A, B, C, D, E, Self::FOld, Self::GOld, Self::HOld>;
+    ) -> Self::OutputSelf<A, B, C, D, E, Self::FOld, Self::GOld, Self::HOld> {
+        self.replace_in_place_6(fa, fb, fc, fd, fe, &mut |f| f)
+    }
 
+    #[inline(always)]
     fn replace_in_place_6<A, B, C, D, E, F>(
         self,
         fa: &mut impl FnMut(Self::AOld) -> A,
@@ -279,8 +295,11 @@ pub trait ReplaceInPlace: Sized {
         fd: &mut impl FnMut(Self::DOld) -> D,
         fe: &mut impl FnMut(Self::EOld) -> E,
         ff: &mut impl FnMut(Self::FOld) -> F,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, Self::GOld, Self::HOld>;
+    ) -> Self::OutputSelf<A, B, C, D, E, F, Self::GOld, Self::HOld> {
+        self.replace_in_place_7(fa, fb, fc, fd, fe, ff, &mut |g| g)
+    }
 
+    #[inline(always)]
     fn replace_in_place_7<A, B, C, D, E, F, G>(
         self,
         fa: &mut impl FnMut(Self::AOld) -> A,
@@ -290,7 +309,9 @@ pub trait ReplaceInPlace: Sized {
         fe: &mut impl FnMut(Self::EOld) -> E,
         ff: &mut impl FnMut(Self::FOld) -> F,
         fg: &mut impl FnMut(Self::GOld) -> G,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, Self::HOld>;
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, Self::HOld> {
+        self.replace_in_place_8(fa, fb, fc, fd, fe, ff, fg, &mut |h| h)
+    }
 
     fn replace_in_place_8<A, B, C, D, E, F, G, H>(
         self,
@@ -894,4 +915,113 @@ mod tests {
     //     let v = v.replace_in_place_1(&mut |x| (x, x));
     //     assert_eq!(v, vec![(1, 1), (2, 2), (3, 3)]);
     // }
+
+    #[test]
+    fn test_named_struct() {
+        let named_struct = NamedStruct {
+            field1: "a".to_string(),
+            field2: vec!["b".to_string(), "c".to_string()],
+            field3: 1,
+        };
+
+        let named_struct = named_struct.replace_in_place_1(&mut |s| s.to_uppercase());
+        assert_eq!(
+            named_struct,
+            NamedStruct {
+                field1: "A".to_string(),
+                field2: vec!["B".to_string(), "C".to_string()],
+                field3: 1
+            }
+        );
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct NamedStruct<T> {
+        field1: T,
+        field2: Vec<T>,
+        field3: u64,
+    }
+
+    impl<T> ReplaceInPlace for NamedStruct<T> {
+        type AOld = T;
+        type BOld = ();
+        type COld = ();
+        type DOld = ();
+        type EOld = ();
+        type FOld = ();
+        type GOld = ();
+        type HOld = ();
+        type OutputSelf<A, B, C, D, E, F, G, H> = NamedStruct<A>;
+
+        #[inline(always)]
+        fn replace_in_place_8<A, B, C, D, E, F, G, H>(
+            self,
+            fa: &mut impl FnMut(Self::AOld) -> A,
+            _fb: &mut impl FnMut(Self::BOld) -> B,
+            _fc: &mut impl FnMut(Self::COld) -> C,
+            _fd: &mut impl FnMut(Self::DOld) -> D,
+            _fe: &mut impl FnMut(Self::EOld) -> E,
+            _ff: &mut impl FnMut(Self::FOld) -> F,
+            _fg: &mut impl FnMut(Self::GOld) -> G,
+            _fh: &mut impl FnMut(Self::HOld) -> H,
+        ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
+            #[allow(clippy::let_unit_value)]
+            let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
+                A,
+                Self::BOld,
+                Self::COld,
+                Self::DOld,
+                Self::EOld,
+                Self::FOld,
+                Self::GOld,
+                Self::HOld,
+            > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
+
+            #[allow(clippy::let_unit_value)]
+            let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
+                A,
+                Self::BOld,
+                Self::COld,
+                Self::DOld,
+                Self::EOld,
+                Self::FOld,
+                Self::GOld,
+                Self::HOld,
+            > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
+
+            #[allow(clippy::let_unit_value)]
+            let _assert_new_a_type_size_less_or_equal =
+                <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+            #[allow(clippy::let_unit_value)]
+            let _assert_new_a_type_alignment_less_or_equal =
+                <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+            unsafe {
+                let mut named_struct = mem::ManuallyDrop::new(self);
+                let old_field1 = ptr::addr_of_mut!(named_struct.field1);
+                let new_field1 = fa(ptr::read(old_field1));
+                ptr::write(old_field1 as *mut A, new_field1);
+
+                // Handle Vec<T> separately
+                let old_field2 = ptr::addr_of_mut!(named_struct.field2);
+                let new_field2 = ptr::read(old_field2).replace_in_place_1(fa);
+                ptr::write(old_field2 as _, new_field2);
+
+                ptr::read(
+                    &named_struct as *const _
+                        as *const Self::OutputSelf<
+                            A,
+                            Self::BOld,
+                            Self::COld,
+                            Self::DOld,
+                            Self::EOld,
+                            Self::FOld,
+                            Self::GOld,
+                            Self::HOld,
+                        >,
+                )
+            }
+        }
+    }
 }
