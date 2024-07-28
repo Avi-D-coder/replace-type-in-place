@@ -1,13 +1,17 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 
+pub mod const_layout_asserts;
+
 // #[cfg(feature = "derive")]
 // pub use replace_type_in_place_derive::ReplaceInPlace;
 
-use std::{
+use core::{
     mem::{self, ManuallyDrop},
     ptr,
 };
+
+use const_layout_asserts::{AssertAlignments, AssertSizes};
 
 pub trait Replace {
     type AOld;
@@ -301,71 +305,375 @@ pub trait ReplaceInPlace: Sized {
     ) -> Self::OutputSelf<A, B, C, D, E, F, G, H>;
 }
 
-pub trait AssertSizes<T: Sized>: Sized {
-    const ASSERT_EQUAL: () = {
-        if mem::size_of::<Self>() != mem::size_of::<T>() {
-            panic!("The size of the Self type is not equal to the size of T");
-        }
-    };
+impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
+    type AOld = AOld;
+    type BOld = BOld;
+    type COld = COld;
+    type DOld = DOld;
+    type EOld = ();
+    type FOld = ();
+    type GOld = ();
+    type HOld = ();
+    type OutputSelf<A, B, C, D, E, F, G, H> = (A, B, C, D);
 
-    const ASSERT_LESS: () = {
-        if !mem::size_of::<Self>() < mem::size_of::<T>() {
-            panic!("The size of the Self type is greater than the size of T");
-        }
-    };
+    #[inline(always)]
+    fn replace_in_place_1<A>(
+        self,
+        f: &mut impl FnMut(Self::AOld) -> A,
+    ) -> Self::OutputSelf<A, BOld, COld, DOld, (), (), (), ()> {
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
+            A,
+            Self::BOld,
+            Self::COld,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
 
-    const ASSERT_GREATER: () = {
-        if !mem::size_of::<Self>() > mem::size_of::<T>() {
-            panic!("The size of the Self type is less than the size of T");
-        }
-    };
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
+            A,
+            Self::BOld,
+            Self::COld,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
 
-    const ASSERT_LESS_OR_EQUAL: () = {
-        if !mem::size_of::<Self>() <= mem::size_of::<T>() {
-            panic!("The size of the Self type is greater than the size of T");
-        }
-    };
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_size_less_or_equal =
+            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
 
-    const ASSERT_GREATER_OR_EQUAL: () = {
-        if !mem::size_of::<Self>() >= mem::size_of::<T>() {
-            panic!("The size of the Self type is less than the size of T");
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_alignment_less_or_equal =
+            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        unsafe {
+            let mut tuple = mem::ManuallyDrop::new(self);
+            let old = ptr::addr_of_mut!(tuple.0);
+            let new = f(ptr::read(old));
+            ptr::write(old as *mut A, new);
+            ptr::read(
+                &tuple as *const _
+                    as *const Self::OutputSelf<
+                        A,
+                        Self::BOld,
+                        Self::COld,
+                        Self::DOld,
+                        Self::EOld,
+                        Self::FOld,
+                        Self::GOld,
+                        Self::HOld,
+                    >,
+            )
         }
-    };
+    }
+
+    #[inline(always)]
+    fn replace_in_place_2<A, B>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+    ) -> Self::OutputSelf<A, B, COld, DOld, (), (), (), ()> {
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
+            A,
+            B,
+            Self::COld,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
+            A,
+            B,
+            Self::COld,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_size_less_or_equal =
+            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_alignment_less_or_equal =
+            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_b_type_size_less_or_equal =
+            <B as AssertSizes<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_b_type_alignment_less_or_equal =
+            <B as AssertAlignments<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
+
+        unsafe {
+            let mut tuple = mem::ManuallyDrop::new(self);
+            let old_a = ptr::addr_of_mut!(tuple.0);
+            let old_b = ptr::addr_of_mut!(tuple.1);
+            let new_a = fa(ptr::read(old_a));
+            let new_b = fb(ptr::read(old_b));
+            ptr::write(old_a as *mut A, new_a);
+            ptr::write(old_b as *mut B, new_b);
+            ptr::read(
+                &tuple as *const _
+                    as *const Self::OutputSelf<
+                        A,
+                        B,
+                        Self::COld,
+                        Self::DOld,
+                        Self::EOld,
+                        Self::FOld,
+                        Self::GOld,
+                        Self::HOld,
+                    >,
+            )
+        }
+    }
+
+    #[inline(always)]
+    fn replace_in_place_3<A, B, C>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+    ) -> Self::OutputSelf<A, B, C, DOld, (), (), (), ()> {
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
+            A,
+            B,
+            C,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
+            A,
+            B,
+            C,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_size_less_or_equal =
+            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_alignment_less_or_equal =
+            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_b_type_size_less_or_equal =
+            <B as AssertSizes<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_b_type_alignment_less_or_equal =
+            <B as AssertAlignments<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_c_type_size_less_or_equal =
+            <C as AssertSizes<Self::COld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_c_type_alignment_less_or_equal =
+            <C as AssertAlignments<Self::COld>>::ASSERT_LESS_OR_EQUAL;
+
+        unsafe {
+            let mut tuple = mem::ManuallyDrop::new(self);
+            let old_a = ptr::addr_of_mut!(tuple.0);
+            let old_b = ptr::addr_of_mut!(tuple.1);
+            let old_c = ptr::addr_of_mut!(tuple.2);
+            let new_a = fa(ptr::read(old_a));
+            let new_b = fb(ptr::read(old_b));
+            let new_c = fc(ptr::read(old_c));
+            ptr::write(old_a as *mut A, new_a);
+            ptr::write(old_b as *mut B, new_b);
+            ptr::write(old_c as *mut C, new_c);
+            ptr::read(
+                &tuple as *const _
+                    as *const Self::OutputSelf<
+                        A,
+                        B,
+                        C,
+                        Self::DOld,
+                        Self::EOld,
+                        Self::FOld,
+                        Self::GOld,
+                        Self::HOld,
+                    >,
+            )
+        }
+    }
+
+    #[inline(always)]
+    fn replace_in_place_4<A, B, C, D>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+    ) -> Self::OutputSelf<A, B, C, D, (), (), (), ()> {
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
+            A,
+            B,
+            C,
+            D,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
+            A,
+            B,
+            C,
+            D,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_size_less_or_equal =
+            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_a_type_alignment_less_or_equal =
+            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_b_type_size_less_or_equal =
+            <B as AssertSizes<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_b_type_alignment_less_or_equal =
+            <B as AssertAlignments<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_c_type_size_less_or_equal =
+            <C as AssertSizes<Self::COld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_c_type_alignment_less_or_equal =
+            <C as AssertAlignments<Self::COld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_d_type_size_less_or_equal =
+            <D as AssertSizes<Self::DOld>>::ASSERT_LESS_OR_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_d_type_alignment_less_or_equal =
+            <D as AssertAlignments<Self::DOld>>::ASSERT_LESS_OR_EQUAL;
+
+        unsafe {
+            let mut tuple = mem::ManuallyDrop::new(self);
+            let old_a = ptr::addr_of_mut!(tuple.0);
+            let old_b = ptr::addr_of_mut!(tuple.1);
+            let old_c = ptr::addr_of_mut!(tuple.2);
+            let old_d = ptr::addr_of_mut!(tuple.3);
+            let new_a = fa(ptr::read(old_a));
+            let new_b = fb(ptr::read(old_b));
+            let new_c = fc(ptr::read(old_c));
+            let new_d = fd(ptr::read(old_d));
+            ptr::write(old_a as *mut A, new_a);
+            ptr::write(old_b as *mut B, new_b);
+            ptr::write(old_c as *mut C, new_c);
+            ptr::write(old_d as *mut D, new_d);
+            ptr::read(
+                &tuple as *const _
+                    as *const Self::OutputSelf<
+                        A,
+                        B,
+                        C,
+                        D,
+                        Self::EOld,
+                        Self::FOld,
+                        Self::GOld,
+                        Self::HOld,
+                    >,
+            )
+        }
+    }
+
+    #[inline(always)]
+    fn replace_in_place_5<A, B, C, D, E>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+    ) -> Self::OutputSelf<A, B, C, D, E, (), (), ()> {
+        self.replace_in_place_4(fa, fb, fc, fd)
+    }
+
+    #[inline(always)]
+    fn replace_in_place_6<A, B, C, D, E, F>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+        _ff: &mut impl FnMut(Self::FOld) -> F,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, (), ()> {
+        self.replace_in_place_4(fa, fb, fc, fd)
+    }
+
+    #[inline(always)]
+    fn replace_in_place_7<A, B, C, D, E, F, G>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+        _ff: &mut impl FnMut(Self::FOld) -> F,
+        _fg: &mut impl FnMut(Self::GOld) -> G,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, ()> {
+        self.replace_in_place_4(fa, fb, fc, fd)
+    }
+
+    #[inline(always)]
+    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
+        self,
+        fa: &mut impl FnMut(Self::AOld) -> A,
+        fb: &mut impl FnMut(Self::BOld) -> B,
+        fc: &mut impl FnMut(Self::COld) -> C,
+        fd: &mut impl FnMut(Self::DOld) -> D,
+        _fe: &mut impl FnMut(Self::EOld) -> E,
+        _ff: &mut impl FnMut(Self::FOld) -> F,
+        _fg: &mut impl FnMut(Self::GOld) -> G,
+        _fh: &mut impl FnMut(Self::HOld) -> H,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
+        self.replace_in_place_4(fa, fb, fc, fd)
+    }
 }
-impl<S: Sized, T: Sized> AssertSizes<T> for S {}
-
-pub trait AssertAlignments<T: Sized>: Sized {
-    const ASSERT_EQUAL: () = {
-        if mem::align_of::<Self>() != mem::align_of::<T>() {
-            panic!("The alignment of the Self type is not equal to the alignment of T");
-        }
-    };
-
-    const ASSERT_LESS: () = {
-        if !mem::align_of::<Self>() < mem::align_of::<T>() {
-            panic!("The alignment of the Self type is greater than the alignment of T");
-        }
-    };
-
-    const ASSERT_GREATER: () = {
-        if !mem::align_of::<Self>() > mem::align_of::<T>() {
-            panic!("The alignment of the Self type is less than the alignment of T");
-        }
-    };
-
-    const ASSERT_LESS_OR_EQUAL: () = {
-        if !mem::align_of::<Self>() <= mem::align_of::<T>() {
-            panic!("The alignment of the Self type is greater than the alignment of T");
-        }
-    };
-
-    const ASSERT_GREATER_OR_EQUAL: () = {
-        if !mem::align_of::<Self>() >= mem::align_of::<T>() {
-            panic!("The alignment of the Self type is less than the alignment of T");
-        }
-    };
-}
-impl<S: Sized, T: Sized> AssertAlignments<T> for S {}
 
 impl<AOld> ReplaceInPlace for Vec<AOld> {
     type AOld = AOld;
