@@ -135,6 +135,52 @@ pub trait ReplaceInPlace: Sized {
         fg: &impl Fn(Self::GOld) -> G,
         fh: &impl Fn(Self::HOld) -> H,
     ) -> Self::OutputSelf<A, B, C, D, E, F, G, H>;
+
+    /// # Safety
+    /// TODO
+    unsafe fn replace_ptr_in_place_8<A, B, C, D, E, F, G, H>(
+        self_ptr: *mut Self,
+        fa: &impl Fn(Self::AOld) -> A,
+        fb: &impl Fn(Self::BOld) -> B,
+        fc: &impl Fn(Self::COld) -> C,
+        fd: &impl Fn(Self::DOld) -> D,
+        fe: &impl Fn(Self::EOld) -> E,
+        ff: &impl Fn(Self::FOld) -> F,
+        fg: &impl Fn(Self::GOld) -> G,
+        fh: &impl Fn(Self::HOld) -> H,
+    ) {
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_is_same_size_as_old_self_type = <Self::OutputSelf<
+            A,
+            Self::BOld,
+            Self::COld,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertSizes<Self>>::ASSERT_EQUAL;
+
+        #[allow(clippy::let_unit_value)]
+        let _assert_new_self_type_is_same_alignment_as_old_self_type = <Self::OutputSelf<
+            A,
+            Self::BOld,
+            Self::COld,
+            Self::DOld,
+            Self::EOld,
+            Self::FOld,
+            Self::GOld,
+            Self::HOld,
+        > as AssertAlignments<Self>>::ASSERT_EQUAL;
+
+        unsafe {
+            let self_owned = ptr::read(self_ptr);
+            ptr::write(
+                self_ptr as *mut Self::OutputSelf<A, B, C, D, E, F, G, H>,
+                self_owned.replace_in_place_8(fa, fb, fc, fd, fe, ff, fg, fh),
+            );
+        }
+    }
 }
 
 impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
