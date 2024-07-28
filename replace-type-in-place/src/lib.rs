@@ -13,200 +13,6 @@ use core::{
 
 use const_layout_asserts::{AssertAlignments, AssertSizes};
 
-pub trait Replace {
-    type AOld;
-    type BOld;
-    type COld;
-    type DOld;
-    type EOld;
-    type FOld;
-    type GOld;
-    type HOld;
-    type OutputSelf<A, B, C, D, E, F, G, H>;
-
-    fn replace_1<A>(
-        self,
-        f: &impl Fn(Self::AOld) -> A,
-    ) -> Self::OutputSelf<
-        A,
-        Self::BOld,
-        Self::COld,
-        Self::DOld,
-        Self::EOld,
-        Self::FOld,
-        Self::GOld,
-        Self::HOld,
-    >;
-
-    fn replace_2<A, B>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-    ) -> Self::OutputSelf<
-        A,
-        B,
-        Self::COld,
-        Self::DOld,
-        Self::EOld,
-        Self::FOld,
-        Self::GOld,
-        Self::HOld,
-    >;
-
-    fn replace_3<A, B, C>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-    ) -> Self::OutputSelf<A, B, C, Self::DOld, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
-
-    fn replace_4<A, B, C, D>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-    ) -> Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld>;
-
-    fn replace_5<A, B, C, D, E>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-    ) -> Self::OutputSelf<A, B, C, D, E, Self::FOld, Self::GOld, Self::HOld>;
-
-    fn replace_6<A, B, C, D, E, F>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-        ff: &impl Fn(Self::FOld) -> F,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, Self::GOld, Self::HOld>;
-
-    fn replace_7<A, B, C, D, E, F, G>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-        ff: &impl Fn(Self::FOld) -> F,
-        fg: &impl Fn(Self::GOld) -> G,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, Self::HOld>;
-
-    fn replace_8<A, B, C, D, E, F, G, H>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-        ff: &impl Fn(Self::FOld) -> F,
-        fg: &impl Fn(Self::GOld) -> G,
-        fh: &impl Fn(Self::HOld) -> H,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H>;
-}
-
-impl<AOld> Replace for Vec<AOld> {
-    type AOld = AOld;
-    type BOld = ();
-    type COld = ();
-    type DOld = ();
-    type EOld = ();
-    type FOld = ();
-    type GOld = ();
-    type HOld = ();
-    type OutputSelf<A, B, C, D, E, F, G, H> = Vec<A>;
-
-    fn replace_1<A>(
-        self,
-        f: &impl Fn(Self::AOld) -> A,
-    ) -> Self::OutputSelf<A, (), (), (), (), (), (), ()> {
-        self.into_iter().map(f).collect()
-    }
-
-    fn replace_2<A, B>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-    ) -> Self::OutputSelf<A, B, (), (), (), (), (), ()> {
-        self.replace_1(fa)
-    }
-
-    fn replace_3<A, B, C>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-    ) -> Self::OutputSelf<A, B, C, (), (), (), (), ()> {
-        self.replace_1(fa)
-    }
-
-    fn replace_4<A, B, C, D>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-    ) -> Self::OutputSelf<A, B, C, D, (), (), (), ()> {
-        self.replace_1(fa)
-    }
-
-    fn replace_5<A, B, C, D, E>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-    ) -> Self::OutputSelf<A, B, C, D, E, (), (), ()> {
-        self.replace_1(fa)
-    }
-
-    fn replace_6<A, B, C, D, E, F>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, (), ()> {
-        self.replace_1(fa)
-    }
-
-    fn replace_7<A, B, C, D, E, F, G>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-        _fg: &impl Fn(Self::GOld) -> G,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, ()> {
-        self.replace_1(fa)
-    }
-
-    fn replace_8<A, B, C, D, E, F, G, H>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-        _fg: &impl Fn(Self::GOld) -> G,
-        _fh: &impl Fn(Self::HOld) -> H,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
-        self.replace_1(fa)
-    }
-}
-
 pub trait ReplaceInPlace: Sized {
     type AOld;
     type BOld;
@@ -613,18 +419,23 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
 
         unsafe {
             let mut tuple = mem::ManuallyDrop::new(self);
+
             let old_a = ptr::addr_of_mut!(tuple.0);
-            let old_b = ptr::addr_of_mut!(tuple.1);
-            let old_c = ptr::addr_of_mut!(tuple.2);
-            let old_d = ptr::addr_of_mut!(tuple.3);
             let new_a = fa(ptr::read(old_a));
-            let new_b = fb(ptr::read(old_b));
-            let new_c = fc(ptr::read(old_c));
-            let new_d = fd(ptr::read(old_d));
             ptr::write(old_a as *mut A, new_a);
+
+            let old_b = ptr::addr_of_mut!(tuple.1);
+            let new_b = fb(ptr::read(old_b));
             ptr::write(old_b as *mut B, new_b);
+
+            let old_c = ptr::addr_of_mut!(tuple.2);
+            let new_c = fc(ptr::read(old_c));
             ptr::write(old_c as *mut C, new_c);
+
+            let old_d = ptr::addr_of_mut!(tuple.3);
+            let new_d = fd(ptr::read(old_d));
             ptr::write(old_d as *mut D, new_d);
+
             ptr::read(
                 &tuple as *const _
                     as *const Self::OutputSelf<
@@ -843,13 +654,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_replace_vec() {
-        let v = vec![1, 2, 3];
-        let v = v.replace_1(&|x| x.to_string());
-        assert_eq!(v, vec!["1", "2", "3"]);
-    }
-
-    #[test]
     fn test_replace_in_place_vec() {
         #[repr(align(8))]
         struct A(u32, u32);
@@ -954,6 +758,7 @@ mod tests {
         type OutputSelf<A, B, C, D, E, F, G, H> = NamedStruct<A>;
 
         #[inline(always)]
+
         fn replace_in_place_8<A, B, C, D, E, F, G, H>(
             self,
             fa: &impl Fn(Self::AOld) -> A,
@@ -1025,6 +830,21 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_tuple_struct() {
+        let tuple_struct = TupleStruct(true, vec![1u32, 2, 3]);
+
+        #[derive(Debug, PartialEq)]
+        #[repr(align(4))]
+        struct A(u16, u16);
+
+        let tuple_struct = tuple_struct.replace_in_place_1(&|b| A(b as u16, b as u16));
+        assert_eq!(
+            tuple_struct,
+            TupleStruct(true, vec![A(1, 1), A(2, 2), A(3, 3)])
+        );
+    }
+
     #[derive(Debug, PartialEq)]
     struct TupleStruct<T>(bool, Vec<T>);
 
@@ -1040,6 +860,7 @@ mod tests {
         type OutputSelf<A, B, C, D, E, F, G, H> = TupleStruct<A>;
 
         #[inline(always)]
+
         fn replace_in_place_8<A, B, C, D, E, F, G, H>(
             self,
             fa: &impl Fn(Self::AOld) -> A,
@@ -1106,6 +927,33 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_enum() {
+        let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant3;
+
+        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+
+        assert_eq!(test_enum, TestEnum::Variant3);
+
+        let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant1 { field: (1, 2) };
+
+        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+
+        assert_eq!(test_enum, TestEnum::Variant1 { field: (1, 2) });
+
+        let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant2(true, vec![(1, 2)]);
+        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+        assert_eq!(test_enum, TestEnum::Variant2(false, vec![(1, 2)]));
+
+        let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant4(1);
+        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x != 0);
+        assert_eq!(test_enum, TestEnum::Variant4(true));
+
+        let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant5((1, 2, 3, (4, 5)));
+        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+        assert_eq!(test_enum, TestEnum::Variant5((1, 4, 6, (4, 5))));
+    }
+
     #[derive(Debug, PartialEq)]
     enum TestEnum<A, B, C> {
         Variant1 { field: A },
@@ -1127,6 +975,7 @@ mod tests {
         type OutputSelf<NewA, NewB, NewC, D, E, F, G, H> = TestEnum<NewA, NewB, NewC>;
 
         #[inline(always)]
+
         fn replace_in_place_8<NewA, NewB, NewC, D, E, F, G, H>(
             self,
             fa: &impl Fn(Self::AOld) -> NewA,
