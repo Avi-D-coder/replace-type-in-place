@@ -13,6 +13,106 @@ use core::{
 
 use const_layout_asserts::{AssertAlignments, AssertSizes};
 
+#[macro_export]
+macro_rules! replace_in_place {
+    ($self:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            $a,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr, $b:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            $a,
+            $b,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr, $b:expr, $c:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            $a,
+            $b,
+            $c,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr, $b:expr, $c:expr, $d:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            $a,
+            $b,
+            $c,
+            $d,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr, $b:expr, $c:expr, $d:expr, $e:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            $a,
+            $b,
+            $c,
+            $d,
+            $e,
+            &|t| t,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8(
+            $self,
+            $a,
+            $b,
+            $c,
+            $d,
+            $e,
+            $f,
+            &|t| t,
+            &|t| t,
+        )
+    };
+    ($self:expr, $a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8($self, $a, $b, $c, $d, $e, $f, $g, &|t| t)
+    };
+    ($self:expr, $a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr) => {
+        <_ as $crate::ReplaceInPlace>::replace_in_place_8($self, $a, $b, $c, $d, $e, $f, $g, $h)
+    };
+}
 pub trait ReplaceInPlace: Sized {
     type AOld;
     type BOld;
@@ -23,101 +123,6 @@ pub trait ReplaceInPlace: Sized {
     type GOld;
     type HOld;
     type OutputSelf<A, B, C, D, E, F, G, H>;
-
-    #[inline(always)]
-    fn replace_in_place_1<A>(
-        self,
-        f: &impl Fn(Self::AOld) -> A,
-    ) -> Self::OutputSelf<
-        A,
-        Self::BOld,
-        Self::COld,
-        Self::DOld,
-        Self::EOld,
-        Self::FOld,
-        Self::GOld,
-        Self::HOld,
-    > {
-        self.replace_in_place_2(f, &|b| b)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_2<A, B>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-    ) -> Self::OutputSelf<
-        A,
-        B,
-        Self::COld,
-        Self::DOld,
-        Self::EOld,
-        Self::FOld,
-        Self::GOld,
-        Self::HOld,
-    > {
-        self.replace_in_place_3(fa, fb, &|c| c)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_3<A, B, C>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-    ) -> Self::OutputSelf<A, B, C, Self::DOld, Self::EOld, Self::FOld, Self::GOld, Self::HOld> {
-        self.replace_in_place_4(fa, fb, fc, &|d| d)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_4<A, B, C, D>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-    ) -> Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld> {
-        self.replace_in_place_5(fa, fb, fc, fd, &|e| e)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_5<A, B, C, D, E>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-    ) -> Self::OutputSelf<A, B, C, D, E, Self::FOld, Self::GOld, Self::HOld> {
-        self.replace_in_place_6(fa, fb, fc, fd, fe, &|f| f)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_6<A, B, C, D, E, F>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-        ff: &impl Fn(Self::FOld) -> F,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, Self::GOld, Self::HOld> {
-        self.replace_in_place_7(fa, fb, fc, fd, fe, ff, &|g| g)
-    }
-
-    #[inline(always)]
-    fn replace_in_place_7<A, B, C, D, E, F, G>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        fe: &impl Fn(Self::EOld) -> E,
-        ff: &impl Fn(Self::FOld) -> F,
-        fg: &impl Fn(Self::GOld) -> G,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, Self::HOld> {
-        self.replace_in_place_8(fa, fb, fc, fd, fe, ff, fg, &|h| h)
-    }
 
     fn replace_in_place_8<A, B, C, D, E, F, G, H>(
         self,
@@ -144,223 +149,17 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
     type OutputSelf<A, B, C, D, E, F, G, H> = (A, B, C, D);
 
     #[inline(always)]
-    fn replace_in_place_1<A>(
-        self,
-        f: &impl Fn(Self::AOld) -> A,
-    ) -> Self::OutputSelf<A, BOld, COld, DOld, (), (), (), ()> {
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
-            A,
-            Self::BOld,
-            Self::COld,
-            Self::DOld,
-            Self::EOld,
-            Self::FOld,
-            Self::GOld,
-            Self::HOld,
-        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
-            A,
-            Self::BOld,
-            Self::COld,
-            Self::DOld,
-            Self::EOld,
-            Self::FOld,
-            Self::GOld,
-            Self::HOld,
-        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_a_type_size_less_or_equal =
-            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_a_type_alignment_less_or_equal =
-            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
-
-        unsafe {
-            let mut tuple = mem::ManuallyDrop::new(self);
-            let old = ptr::addr_of_mut!(tuple.0);
-            let new = f(ptr::read(old));
-            ptr::write(old as *mut A, new);
-            ptr::read(
-                &tuple as *const _
-                    as *const Self::OutputSelf<
-                        A,
-                        Self::BOld,
-                        Self::COld,
-                        Self::DOld,
-                        Self::EOld,
-                        Self::FOld,
-                        Self::GOld,
-                        Self::HOld,
-                    >,
-            )
-        }
-    }
-
-    #[inline(always)]
-    fn replace_in_place_2<A, B>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-    ) -> Self::OutputSelf<A, B, COld, DOld, (), (), (), ()> {
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
-            A,
-            B,
-            Self::COld,
-            Self::DOld,
-            Self::EOld,
-            Self::FOld,
-            Self::GOld,
-            Self::HOld,
-        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
-            A,
-            B,
-            Self::COld,
-            Self::DOld,
-            Self::EOld,
-            Self::FOld,
-            Self::GOld,
-            Self::HOld,
-        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_a_type_size_less_or_equal =
-            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_a_type_alignment_less_or_equal =
-            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_b_type_size_less_or_equal =
-            <B as AssertSizes<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_b_type_alignment_less_or_equal =
-            <B as AssertAlignments<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
-
-        unsafe {
-            let mut tuple = mem::ManuallyDrop::new(self);
-            let old_a = ptr::addr_of_mut!(tuple.0);
-            let old_b = ptr::addr_of_mut!(tuple.1);
-            let new_a = fa(ptr::read(old_a));
-            let new_b = fb(ptr::read(old_b));
-            ptr::write(old_a as *mut A, new_a);
-            ptr::write(old_b as *mut B, new_b);
-            ptr::read(
-                &tuple as *const _
-                    as *const Self::OutputSelf<
-                        A,
-                        B,
-                        Self::COld,
-                        Self::DOld,
-                        Self::EOld,
-                        Self::FOld,
-                        Self::GOld,
-                        Self::HOld,
-                    >,
-            )
-        }
-    }
-
-    #[inline(always)]
-    fn replace_in_place_3<A, B, C>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-    ) -> Self::OutputSelf<A, B, C, DOld, (), (), (), ()> {
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
-            A,
-            B,
-            C,
-            Self::DOld,
-            Self::EOld,
-            Self::FOld,
-            Self::GOld,
-            Self::HOld,
-        > as AssertSizes<Self>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_self_type_alignment_less_or_equal = <Self::OutputSelf<
-            A,
-            B,
-            C,
-            Self::DOld,
-            Self::EOld,
-            Self::FOld,
-            Self::GOld,
-            Self::HOld,
-        > as AssertAlignments<Self>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_a_type_size_less_or_equal =
-            <A as AssertSizes<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_a_type_alignment_less_or_equal =
-            <A as AssertAlignments<Self::AOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_b_type_size_less_or_equal =
-            <B as AssertSizes<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_b_type_alignment_less_or_equal =
-            <B as AssertAlignments<Self::BOld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_c_type_size_less_or_equal =
-            <C as AssertSizes<Self::COld>>::ASSERT_LESS_OR_EQUAL;
-
-        #[allow(clippy::let_unit_value)]
-        let _assert_new_c_type_alignment_less_or_equal =
-            <C as AssertAlignments<Self::COld>>::ASSERT_LESS_OR_EQUAL;
-
-        unsafe {
-            let mut tuple = mem::ManuallyDrop::new(self);
-            let old_a = ptr::addr_of_mut!(tuple.0);
-            let old_b = ptr::addr_of_mut!(tuple.1);
-            let old_c = ptr::addr_of_mut!(tuple.2);
-            let new_a = fa(ptr::read(old_a));
-            let new_b = fb(ptr::read(old_b));
-            let new_c = fc(ptr::read(old_c));
-            ptr::write(old_a as *mut A, new_a);
-            ptr::write(old_b as *mut B, new_b);
-            ptr::write(old_c as *mut C, new_c);
-            ptr::read(
-                &tuple as *const _
-                    as *const Self::OutputSelf<
-                        A,
-                        B,
-                        C,
-                        Self::DOld,
-                        Self::EOld,
-                        Self::FOld,
-                        Self::GOld,
-                        Self::HOld,
-                    >,
-            )
-        }
-    }
-
-    #[inline(always)]
-    fn replace_in_place_4<A, B, C, D>(
+    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
         self,
         fa: &impl Fn(Self::AOld) -> A,
         fb: &impl Fn(Self::BOld) -> B,
         fc: &impl Fn(Self::COld) -> C,
         fd: &impl Fn(Self::DOld) -> D,
-    ) -> Self::OutputSelf<A, B, C, D, (), (), (), ()> {
+        _fe: &impl Fn(Self::EOld) -> E,
+        _ff: &impl Fn(Self::FOld) -> F,
+        _fg: &impl Fn(Self::GOld) -> G,
+        _fh: &impl Fn(Self::HOld) -> H,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
         #[allow(clippy::let_unit_value)]
         let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
             A,
@@ -451,21 +250,6 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
             )
         }
     }
-
-    #[inline(always)]
-    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        fb: &impl Fn(Self::BOld) -> B,
-        fc: &impl Fn(Self::COld) -> C,
-        fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-        _fg: &impl Fn(Self::GOld) -> G,
-        _fh: &impl Fn(Self::HOld) -> H,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
-        self.replace_in_place_4(fa, fb, fc, fd)
-    }
 }
 
 impl<AOld> ReplaceInPlace for Vec<AOld> {
@@ -480,10 +264,17 @@ impl<AOld> ReplaceInPlace for Vec<AOld> {
     type OutputSelf<A, B, C, D, E, F, G, H> = Vec<A>;
 
     #[inline(always)]
-    fn replace_in_place_1<A>(
+    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
         self,
         f: &impl Fn(Self::AOld) -> A,
-    ) -> Self::OutputSelf<A, (), (), (), (), (), (), ()> {
+        _fb: &impl Fn(Self::BOld) -> B,
+        _fc: &impl Fn(Self::COld) -> C,
+        _fd: &impl Fn(Self::DOld) -> D,
+        _fe: &impl Fn(Self::EOld) -> E,
+        _ff: &impl Fn(Self::FOld) -> F,
+        _fg: &impl Fn(Self::GOld) -> G,
+        _fh: &impl Fn(Self::HOld) -> H,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
         #[allow(clippy::let_unit_value)]
         let _assert_new_self_type_is_same_size_as_old_self_type = <Self::OutputSelf<
             A,
@@ -531,20 +322,6 @@ impl<AOld> ReplaceInPlace for Vec<AOld> {
             mem::transmute::<ManuallyDrop<Vec<Self::AOld>>, Vec<A>>(vec)
         }
     }
-
-    fn replace_in_place_8<A, B, C, D, E, F, G, H>(
-        self,
-        fa: &impl Fn(Self::AOld) -> A,
-        _fb: &impl Fn(Self::BOld) -> B,
-        _fc: &impl Fn(Self::COld) -> C,
-        _fd: &impl Fn(Self::DOld) -> D,
-        _fe: &impl Fn(Self::EOld) -> E,
-        _ff: &impl Fn(Self::FOld) -> F,
-        _fg: &impl Fn(Self::GOld) -> G,
-        _fh: &impl Fn(Self::HOld) -> H,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
-        self.replace_in_place_1(fa)
-    }
 }
 
 #[cfg(test)]
@@ -557,7 +334,7 @@ mod tests {
         struct A(u32, u32);
 
         let v = vec![A(1, 2), A(3, 4)];
-        let v = v.replace_in_place_1(&|A(x, y)| x as u64 * y as u64);
+        let v = replace_in_place!(v, &|A(x, y)| x as u64 * y as u64);
         assert_eq!(v, vec![2, 12]);
     }
 
@@ -584,7 +361,7 @@ mod tests {
     fn test_refine_enum_inplace() {
         let vec = vec![ABC::A("a".to_string()), ABC::B(true), ABC::C(1)];
 
-        let vec: Vec<AB> = vec.replace_in_place_1(&|abc| match abc {
+        let vec: Vec<AB> = replace_in_place!(vec, &|abc| match abc {
             ABC::A(s) => AB::A(s),
             ABC::B(b) => AB::B(b),
             ABC::C(c) => AB::A(c.to_string()),
@@ -595,7 +372,7 @@ mod tests {
             vec![AB::A("a".to_string()), AB::B(true), AB::A("1".to_string())]
         );
 
-        let vec: Vec<A> = vec.replace_in_place_1(&|ab| match ab {
+        let vec: Vec<A> = replace_in_place!(vec, &|ab| match ab {
             AB::A(s) => A::A(s),
             AB::B(b) => A::A(b.to_string()),
         });
@@ -626,7 +403,7 @@ mod tests {
             field3: 1,
         };
 
-        let named_struct = named_struct.replace_in_place_1(&|s| s.to_uppercase());
+        let named_struct = replace_in_place!(named_struct, &|s| s.to_uppercase());
         assert_eq!(
             named_struct,
             NamedStruct {
@@ -708,7 +485,7 @@ mod tests {
 
                 // Handle Vec<T> separately
                 let old_field2 = ptr::addr_of_mut!(named_struct.field2);
-                let new_field2 = ptr::read(old_field2).replace_in_place_1(fa);
+                let new_field2 = replace_in_place!(ptr::read(old_field2), fa);
                 ptr::write(old_field2 as _, new_field2);
 
                 ptr::read(
@@ -736,7 +513,7 @@ mod tests {
         #[repr(align(4))]
         struct A(u16, u16);
 
-        let tuple_struct = tuple_struct.replace_in_place_1(&|b| A(b as u16, b as u16));
+        let tuple_struct = replace_in_place!(tuple_struct, &|b| A(b as u16, b as u16));
         assert_eq!(
             tuple_struct,
             TupleStruct(true, vec![A(1, 1), A(2, 2), A(3, 3)])
@@ -805,7 +582,7 @@ mod tests {
             unsafe {
                 let mut tuple_struct = mem::ManuallyDrop::new(self);
                 let old_vec = ptr::addr_of_mut!(tuple_struct.1);
-                let new_vec = ptr::read(old_vec).replace_in_place_1(fa);
+                let new_vec = replace_in_place!(ptr::read(old_vec), fa);
                 ptr::write(old_vec as *mut Vec<A>, new_vec);
 
                 ptr::read(
@@ -829,26 +606,26 @@ mod tests {
     fn test_enum() {
         let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant3;
 
-        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+        let test_enum = replace_in_place!(test_enum, &|x| (x.0, x.1), &|x| !x, &|x| x * 2);
 
         assert_eq!(test_enum, TestEnum::Variant3);
 
         let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant1 { field: (1, 2) };
 
-        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+        let test_enum = replace_in_place!(test_enum, &|x| (x.0, x.1), &|x| !x, &|x| x * 2);
 
         assert_eq!(test_enum, TestEnum::Variant1 { field: (1, 2) });
 
         let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant2(true, vec![(1, 2)]);
-        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+        let test_enum = replace_in_place!(test_enum, &|x| (x.0, x.1), &|x| !x, &|x| x * 2);
         assert_eq!(test_enum, TestEnum::Variant2(false, vec![(1, 2)]));
 
         let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant4(1);
-        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x != 0);
+        let test_enum = replace_in_place!(test_enum, &|x| (x.0, x.1), &|x| !x, &|x| x != 0);
         assert_eq!(test_enum, TestEnum::Variant4(true));
 
         let test_enum: TestEnum<(u128, u128), bool, u64> = TestEnum::Variant5((1, 2, 3, (4, 5)));
-        let test_enum = test_enum.replace_in_place_3(&|x| (x.0, x.1), &|x| !x, &|x| x * 2);
+        let test_enum = replace_in_place!(test_enum, &|x| (x.0, x.1), &|x| !x, &|x| x * 2);
         assert_eq!(test_enum, TestEnum::Variant5((1, 4, 6, (4, 5))));
     }
 
@@ -940,18 +717,12 @@ mod tests {
                     fb(b),
                     // Note: The parameter A is in vec so we can use replace_in_place_1(fa)
                     // You have to match arity of replace_in_place_1 and the order of the type parameters in the field type.
-                    <Vec<A> as ReplaceInPlace>::replace_in_place_1(vec, fa),
+                    replace_in_place!(vec, fa),
                 ),
                 TestEnum::Variant3 => TestEnum::Variant3,
                 TestEnum::Variant4(c) => TestEnum::Variant4(fc(c)),
                 TestEnum::Variant5(tuple) => {
-                    TestEnum::Variant5(<(u32, C, C, A) as ReplaceInPlace>::replace_in_place_4(
-                        tuple,
-                        &|x| x,
-                        fc,
-                        fc,
-                        fa,
-                    ))
+                    TestEnum::Variant5(replace_in_place!(tuple, &|x| x, fc, fc, fa))
                 }
             }
         }
