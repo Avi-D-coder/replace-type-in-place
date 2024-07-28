@@ -136,8 +136,25 @@ pub trait ReplaceInPlace: Sized {
         fh: &impl Fn(Self::HOld) -> H,
     ) -> Self::OutputSelf<A, B, C, D, E, F, G, H>;
 
+    /// This function replaces types under a pointer in place.
+    ///
+    /// # Arguments
+    /// * `self_ptr` - A pointer to the type to that will have it's parameters replaced.
+    /// * `f{a..=g}` - A function that takes old values of the first type parameter and returns new values.
+    ///
+    /// We return `self_ptr` cast as `*mut Self::OutputSelf<A, B, C, D, E, F, G, H>`
+    ///
+    /// This method comes with a slightly inefficient default implementation.
+    /// The default implementation may copy Self on the stack before writing the new ptr.
+    /// To avoid this overhead you can implement this unsafe method manually or use `#[derive(ReplaceInPlace)]`.
+    ///
     /// # Safety
-    /// TODO
+    /// The caller must ensure that the pointer is valid and the pointer is never dereferenced as the old type after the call.
+    ///
+    /// The implementation of this function must ensure that the size and alignment of the new types is compatible with the old types.
+    /// These checks should be done at compile time using the `AssertSizes` and `AssertAlignments` traits.
+    /// Implementations should be very careful to avoid double free, and other memory safety issues.
+    #[inline(always)]
     unsafe fn replace_ptr_in_place_8<A, B, C, D, E, F, G, H>(
         self_ptr: *mut Self,
         fa: &impl Fn(Self::AOld) -> A,
@@ -148,7 +165,7 @@ pub trait ReplaceInPlace: Sized {
         ff: &impl Fn(Self::FOld) -> F,
         fg: &impl Fn(Self::GOld) -> G,
         fh: &impl Fn(Self::HOld) -> H,
-    ) {
+    ) -> *mut Self::OutputSelf<A, B, C, D, E, F, G, H> {
         #[allow(clippy::let_unit_value)]
         let _assert_new_self_type_is_same_size_as_old_self_type = <Self::OutputSelf<
             A,
@@ -175,10 +192,14 @@ pub trait ReplaceInPlace: Sized {
 
         unsafe {
             let self_owned = ptr::read(self_ptr);
+            let new_ptr = self_ptr as *mut Self::OutputSelf<A, B, C, D, E, F, G, H>;
+
             ptr::write(
-                self_ptr as *mut Self::OutputSelf<A, B, C, D, E, F, G, H>,
+                new_ptr,
                 self_owned.replace_in_place_8(fa, fb, fc, fd, fe, ff, fg, fh),
             );
+
+            new_ptr
         }
     }
 }
@@ -196,7 +217,28 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
 
     #[inline(always)]
     fn replace_in_place_8<A, B, C, D, E, F, G, H>(
-        self,
+        mut self,
+        fa: &impl Fn(Self::AOld) -> A,
+        fb: &impl Fn(Self::BOld) -> B,
+        fc: &impl Fn(Self::COld) -> C,
+        fd: &impl Fn(Self::DOld) -> D,
+        fe: &impl Fn(Self::EOld) -> E,
+        ff: &impl Fn(Self::FOld) -> F,
+        fg: &impl Fn(Self::GOld) -> G,
+        fh: &impl Fn(Self::HOld) -> H,
+    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
+        let self_ptr = &mut self as *mut Self;
+
+        // relys on size and alignment checks in replace_ptr_in_place_8
+        unsafe {
+            let new_ptr = Self::replace_ptr_in_place_8(self_ptr, fa, fb, fc, fd, fe, ff, fg, fh);
+            ptr::read(new_ptr)
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn replace_ptr_in_place_8<A, B, C, D, E, F, G, H>(
+        self_ptr: *mut Self,
         fa: &impl Fn(Self::AOld) -> A,
         fb: &impl Fn(Self::BOld) -> B,
         fc: &impl Fn(Self::COld) -> C,
@@ -205,7 +247,7 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
         _ff: &impl Fn(Self::FOld) -> F,
         _fg: &impl Fn(Self::GOld) -> G,
         _fh: &impl Fn(Self::HOld) -> H,
-    ) -> Self::OutputSelf<A, B, C, D, E, F, G, H> {
+    ) -> *mut Self::OutputSelf<A, B, C, D, E, F, G, H> {
         #[allow(clippy::let_unit_value)]
         let _assert_new_self_type_size_less_or_equal = <Self::OutputSelf<
             A,
@@ -263,37 +305,24 @@ impl<AOld, BOld, COld, DOld> ReplaceInPlace for (AOld, BOld, COld, DOld) {
             <D as AssertAlignments<Self::DOld>>::ASSERT_LESS_OR_EQUAL;
 
         unsafe {
-            let mut tuple = mem::ManuallyDrop::new(self);
-
-            let old_a = ptr::addr_of_mut!(tuple.0);
+            let old_a = ptr::addr_of_mut!((*self_ptr).0);
             let new_a = fa(ptr::read(old_a));
             ptr::write(old_a as *mut A, new_a);
 
-            let old_b = ptr::addr_of_mut!(tuple.1);
+            let old_b = ptr::addr_of_mut!((*self_ptr).1);
             let new_b = fb(ptr::read(old_b));
             ptr::write(old_b as *mut B, new_b);
 
-            let old_c = ptr::addr_of_mut!(tuple.2);
+            let old_c = ptr::addr_of_mut!((*self_ptr).2);
             let new_c = fc(ptr::read(old_c));
             ptr::write(old_c as *mut C, new_c);
 
-            let old_d = ptr::addr_of_mut!(tuple.3);
+            let old_d = ptr::addr_of_mut!((*self_ptr).3);
             let new_d = fd(ptr::read(old_d));
             ptr::write(old_d as *mut D, new_d);
 
-            ptr::read(
-                &tuple as *const _
-                    as *const Self::OutputSelf<
-                        A,
-                        B,
-                        C,
-                        D,
-                        Self::EOld,
-                        Self::FOld,
-                        Self::GOld,
-                        Self::HOld,
-                    >,
-            )
+            self_ptr
+                as *mut Self::OutputSelf<A, B, C, D, Self::EOld, Self::FOld, Self::GOld, Self::HOld>
         }
     }
 }
@@ -696,7 +725,6 @@ mod tests {
         type OutputSelf<NewA, NewB, NewC, D, E, F, G, H> = TestEnum<NewA, NewB, NewC>;
 
         #[inline(always)]
-
         fn replace_in_place_8<NewA, NewB, NewC, D, E, F, G, H>(
             self,
             fa: &impl Fn(Self::AOld) -> NewA,
